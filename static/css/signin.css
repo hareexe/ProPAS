@@ -1,0 +1,162 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Royal Blue Background */
+body {
+    background-color: #4169E1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Sign-In Card */
+.signin-card {
+    background-color: #ffffff;
+    padding: 50px 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    /* Keeps the logo and title centered, but we will override for the form */
+    text-align: center; 
+}
+
+/* Logo Section */
+.logo-container {
+    margin-bottom: 35px;
+}
+
+.logo-text {
+    font-size: 30px;
+    font-weight: 700;
+    color: #101d42; /* Dashboard Navy */
+}
+
+.logo-text span {
+    color: #2563eb; /* Dashboard Blue */
+}
+
+.logo-tagline {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: block;
+    margin-top: 5px;
+}
+
+h2 {
+    color: #1e293b;
+    font-size: 20px;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+/* --- Form Alignment Fixes --- */
+
+form {
+    text-align: left; /* Aligns all form elements to the left */
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+/* Added Label styling to match the Dashboard headers */
+.input-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+    transition: all 0.2s;
+    background-color: #f8fafc;
+}
+
+input:focus {
+    border-color: #2563eb;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Button Styling */
+.login-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+
+.login-btn:hover {
+    background-color: #1d4ed8;
+}
+
+/* Footer Links */
+.footer-links {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+.footer-links a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+/* Logo Wrapper Flexbox */
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centers the whole logo block in the card */
+    gap: 12px;               /* Space between Icon and Text */
+    margin-bottom: 5px;
+}
+
+/* Ensure the icon matches the text height */
+.header-logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+}
+
+.logo-text {
+    font-size: 32px;
+    font-weight: 800;
+    color: #101d42;
+    letter-spacing: -0.5px;
+}
+
+.logo-tagline {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: block;
+    margin-top: 5px;
+}

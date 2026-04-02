@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProPAS | Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/create_proposal.css') }}">
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-seal">
+    <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="ProPAS Logo" class="header-logo-img">
+  </div>
+  <div class="header-text">
+    <h1>Project Proposal Generator</h1>
+    <p>Northwestern University · ProPAS — Project Proposal Automation System</p>
+  </div>
+  <div class="header-badge no-print">ProPAS</div>
+</div>
+
+<div class="card">
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar"></div>
+  </div>
+
+  <nav class="section-nav no-print">
+    <button class="active" onclick="goTo(0)">① Overview</button>
+    <button onclick="goTo(1)">② Rationale</button>
+    <button onclick="goTo(2)">③ Objectives</button>
+    <button onclick="goTo(3)">④ Budget</button>
+    <button onclick="goTo(4)">⑤ Signatories</button>
+  </nav>
+
+  <form id="proposalForm" method="POST" action="{{ url_for('create_proposal', edit_id=edit_data.id if edit_data else None) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <input type="hidden" name="budget_items" id="id_budget_items" />
+
+    <div class="form-body">
+
+      <div class="form-section active" id="section-0">
+        <div class="section-title">Project Overview</div>
+        <div class="section-subtitle">Form sections I – IV of OSA-F05A.</div>
+        <div class="field-grid cols-2">
+          <div class="field" style="grid-column:1/-1">
+            <label>I. Project Proposal Title <span class="req">*</span></label>
+            <input type="text" id="id_title" name="title" required placeholder="Project Title" 
+                   value="{{ edit_data.title if edit_data else '' }}">
+          </div>
+          <div class="field">
+            <label>II. Sponsor / Organization <span class="req">*</span></label>
+            <input type="text" id="id_sponsor" name="sponsor" placeholder="e.g., Student Council" required oninput="updateProgress()" 
+                   value="{{ edit_data.proposal_data.get('sponsor', '') if edit_data else '' }}" />
+          </div>
+          <div class="field">
+            <label>III. Date &amp; Venue</label>
+            <input type="text" id="id_date_venue" name="date_venue" placeholder="e.g., Sept 12, 2025 | University Gym" 
+                   value="{{ edit_data.proposal_data.get('date_venue', '') if edit_data else '' }}" />
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>IV. Target Participants</label>
+            <input type="text" id="id_participation" name="participation" placeholder="e.g., All 1st Year Engineering Students" 
+                   value="{{ edit_data.proposal_data.get('participation', '') if edit_data else '' }}" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="section-1">
+        <div class="section-title">Background, Rationale &amp; Approach</div>
+        <div class="section-subtitle">Form sections V and VIII of OSA-F05A.</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>V. Background / Rationale <span class="req">*</span></label>
+            <textarea id="id_rationale" name="rationale" rows="6" maxlength="2000" oninput="countChars(this,'rationale-count')" placeholder="Describe the background and rationale..." required>{{ edit_data.proposal_data.get('rationale', '') if edit_data else '' }}</textarea>
+            <div class="field-footer"><span class="char-count" id="rationale-count">0 / 2000</span></div>
+          </div>
+          <div class="field">
+            <label>VIII. Approach / Process</label>
+            <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" oninput="countChars(this,'approach-count')" placeholder="Describe the approach or methodology...">{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
+            <div class="field-footer"><span class="char-count" id="approach-count">0 / 2000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="section-2">
+        <div class="section-title">Objectives, UNSDGs &amp; Expected Outcomes</div>
+        <div class="section-subtitle">Form sections VI, VII, and IX of OSA-F05A.</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>VI. Objectives <span class="req">*</span></label>
+            <textarea id="id_objectives" name="objectives_list" rows="5" maxlength="2000" oninput="countChars(this,'obj-count')" placeholder="List each objective on a new line..." required>{{ edit_data.proposal_data.get('objectives_list', '') if edit_data else '' }}</textarea>
+            <div class="field-footer"><span class="char-count" id="obj-count">0 / 2000</span></div>
+          </div>
+          <div class="field">
+            <label>VII. UNSDGs (Sustainable Development Goals) Targets</label>
+            <textarea id="id_unsdg" name="unsdg" rows="3" maxlength="1000" oninput="countChars(this,'unsdg-count')" placeholder="e.g., SDG 4: Quality Education">{{ edit_data.proposal_data.get('unsdg', '') if edit_data else '' }}</textarea>
+            <div class="field-footer"><span class="char-count" id="unsdg-count">0 / 1000</span></div>
+          </div>
+          <div class="field">
+            <label>IX. Expected Outcomes</label>
+            <textarea id="id_outcome" name="expected_outcome" rows="4" maxlength="2000" oninput="countChars(this,'outcome-count')" placeholder="Describe the expected results...">{{ edit_data.proposal_data.get('expected_outcome', '') if edit_data else '' }}</textarea>
+            <div class="field-footer"><span class="char-count" id="outcome-count">0 / 2000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="section-3">
+        <div class="section-title">Budget</div>
+        <div class="section-subtitle">Form section X of OSA-F05A.</div>
+
+        <div class="field" style="margin-bottom:18px;">
+          <label>X-b. Itemization of Proposed Budget</label>
+          <div class="bud-table-wrap">
+            <table class="bud-table" id="budgetTable">
+              <thead>
+                <tr>
+                  <th class="bud-th-no">#</th>
+                  <th class="bud-th-desc">Item / Description</th>
+                  <th class="bud-th-qty">Qty</th>
+                  <th class="bud-th-unit">Unit Cost (₱)</th>
+                  <th class="bud-th-amt">Amount (₱)</th>
+                  <th class="bud-th-del"></th>
+                </tr>
+              </thead>
+              <tbody id="budgetRows"></tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4" class="bud-total-label">Total</td>
+                  <td class="bud-total-val" id="budgetTotal">₱ 0.00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            <button type="button" class="bud-add-btn" onclick="addBudgetRow()">+ Add item</button>
+          </div>
+        </div>
+
+        <div class="field-grid cols-2">
+          <div class="field">
+            <label>X-a. Proposed Budget (₱)</label>
+            <input type="number" id="id_budget" name="budget" placeholder="0.00" step="0.01" 
+                   value="{{ edit_data.proposal_data.get('budget', 0) if edit_data else 0 }}" />
+          </div>
+          <div class="field">
+            <label>X-c. Source of Funding</label>
+            <input type="text" id="id_funding_source" name="funding_source" placeholder="e.g., Student Org Fund" 
+                   value="{{ edit_data.proposal_data.get('funding_source', '') if edit_data else '' }}" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="section-4">
+        <div class="section-title">Approval Signatories</div>
+        <div class="section-subtitle">Authorized signatures required for OSA-F05A submission.</div>
+        <div class="sig-grid">
+          <div class="sig-card">
+            <div class="sig-role">President / Project Coordinator</div>
+            <input type="text" id="id_sig_president" name="signatory_ProjPresident" placeholder="Full name" 
+                   value="{{ edit_data.proposal_data.get('signatory_ProjPresident', '') if edit_data else '' }}" />
+          </div>
+          <div class="sig-card">
+            <div class="sig-role">Person In-Charge / Adviser</div>
+            <input type="text" id="id_sig_adviser" name="signatory_adviser" placeholder="Full name" 
+                   value="{{ edit_data.proposal_data.get('signatory_adviser', '') if edit_data else '' }}" />
+          </div>
+          <div class="sig-card">
+            <div class="sig-role">Department / Program Head</div>
+            <input type="text" id="id_sig_dept" name="signatory_dept_head" placeholder="Full name" 
+                   value="{{ edit_data.proposal_data.get('signatory_dept_head', '') if edit_data else '' }}" />
+          </div>
+          <div class="sig-card">
+            <div class="sig-role">College Dean</div>
+            <input type="text" id="id_sig_dean" name="signatory_dean" placeholder="Full name" 
+                   value="{{ edit_data.proposal_data.get('signatory_dean', '') if edit_data else '' }}" />
+          </div>
+        </div>
+      </div>
+
+    </div><div class="form-nav no-print">
+      <div class="form-nav-left">
+        <button type="button" class="btn btn-ghost" id="btnHome" data-url="{{ url_for('org_home') }}">← Home</button>
+        <button type="button" class="btn btn-ghost" id="btnBack" onclick="navigate(-1)" style="display:none">← Back</button>
+        <span class="step-indicator">Step <strong id="currentStep">1</strong> of 5</span>
+      </div>
+      <div class="form-nav-right">
+        <button type="button" class="btn btn-preview no-print" id="btnPreview" style="display:none" onclick="openPreview()">Preview PDF</button>
+        <button type="button" class="btn btn-primary" id="btnNext" onclick="navigate(1)">Next →</button>
+        <button type="button" class="btn btn-blue" id="btnSubmit" style="display:none">
+            {{ 'Update Proposal' if edit_data else 'Submit Proposal' }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="modal-overlay no-print" id="previewModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>Official Proposal Preview — OSA-F05A</span>
+      <div class="modal-header-actions">
+        <button class="btn-dl" onclick="downloadPDF()">Download PDF</button>
+        <button class="btn-close-modal" onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+    <div id="previewContent" style="max-height:78vh; overflow-y:auto; background:#e8e4de; padding:24px 0;"></div>
+  </div>
+</div>
+<div id="printTarget" style="display:none;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/propas.js') }}"></script>
+</body>
+</html>

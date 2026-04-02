@@ -1,0 +1,45 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  role: String
+  department: String
+}
+
+type DocumentType @table {
+  name: String!
+  createdAt: Timestamp!
+  description: String
+  fieldsSchema: String
+}
+
+type Document @table {
+  title: String!
+  documentType: DocumentType!
+  owner: User!
+  status: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  content: String
+  submittedAt: Timestamp
+  approvedByUser: User
+  approvedAt: Timestamp
+}
+
+type DocumentStatusLog @table {
+  document: Document!
+  actionByUser: User!
+  oldStatus: String!
+  newStatus: String!
+  timestamp: Timestamp!
+  comments: String
+}
+
+type Review @table {
+  document: Document!
+  reviewer: User!
+  status: String!
+  createdAt: Timestamp!
+  comments: String
+  reviewedAt: Timestamp
+}

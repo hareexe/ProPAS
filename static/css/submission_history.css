@@ -1,0 +1,79 @@
+/* Filter Bar Styling */
+.filter-card {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-group.search {
+    flex: 2;
+}
+
+.filter-group label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    letter-spacing: 0.05em;
+}
+
+.filter-group input, .filter-group select {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.85rem;
+    background: #fcfdfe;
+}
+
+.filter-group input:focus {
+    outline: none;
+    border-color: var(--navy-mid);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-filter {
+    background: var(--navy-mid);
+    color: white;
+    border: none;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-filter:hover {
+    background: #1d4ed8;
+}
+
+.btn-reset {
+    text-decoration: none;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    padding: 11px 10px;
+}
