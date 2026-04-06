@@ -1,8 +1,3 @@
-/**
- * ProPAS - Project Proposal Automation System
- * Multi-step Form, Document Generation & Cloud Submission Logic
- */
-
 // ─── STATE & CONFIGURATION ───────────────────────
 let cur = 0;
 const TOTAL = 5;
@@ -10,29 +5,24 @@ const TOTAL = 5;
 // ─── NAVIGATION LOGIC ────────────────────────────
 
 function goTo(idx) {
-    // Clamp index between 0 and TOTAL-1
     idx = Math.min(Math.max(idx, 0), TOTAL - 1);
 
-    // Toggle Section Visibility
     document.querySelectorAll('.form-section').forEach((s, i) => {
         s.classList.toggle('active', i === idx);
     });
 
-    // Toggle Nav Button Active State
     document.querySelectorAll('.section-nav button').forEach((b, i) => {
         b.classList.toggle('active', i === idx);
     });
 
     cur = idx;
 
-    // Update Progress Indicators
     const stepIndicator = document.getElementById('currentStep');
     const progressBar = document.getElementById('progressBar');
 
     if (stepIndicator) stepIndicator.textContent = idx + 1;
     if (progressBar) progressBar.style.width = ((idx + 1) / TOTAL * 100) + '%';
 
-    // UI Element Visibility Logic
     const isFirst = (idx === 0);
     const isLast  = (idx === TOTAL - 1);
 
@@ -128,6 +118,18 @@ const g   = id => (document.getElementById(id) || {}).value || '';
 const esc = s  => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const fmt = n  => Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+async function downloadPDF() {
+    const htmlString = buildDocHTML();
+    const opt = {
+        margin: 10,
+        filename: 'proposal.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    await html2pdf().set(opt).from(htmlString).save();
+}
+
 function buildDocHTML() {
     let budgetRowsHTML = '';
     let grandTotal = 0;
@@ -148,53 +150,165 @@ function buildDocHTML() {
     });
 
     const objLines = g('id_objectives').split('\n').filter(l => l.trim());
-    const objHTML  = objLines.map((l, i) => `<div class="obj-row"><span class="obj-n">${i + 1}.</span><span class="obj-v">${esc(l)}</span></div>`).join('');
+    const objHTML  = objLines.map((l, i) => `
+        <div style="display:flex;gap:6px;margin-bottom:3px;">
+            <span style="min-width:18px;">${i + 1}.</span>
+            <span style="flex:1;border-bottom:1px solid #000;min-height:17px;padding:1px 2px;white-space:pre-wrap;">${esc(l)}</span>
+        </div>`).join('');
 
     return `
-    <div class="doc-wrap">
-      <div class="doc-page">
-        <div class="lh">
-          <h2>NORTHWESTERN UNIVERSITY</h2>
-          <p>Laoag City, Ilocos Norte</p>
-          <p>Office of Student Affairs</p>
-          <hr class="lh-rule">
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; background: white; }
+    </style>
+    <div style="background:white;max-width:794px;margin:0 auto;padding:36px 48px;font-family:Arial,sans-serif;font-size:10.5pt;color:#000;line-height:1.4;text-align:justify;">
+
+      <!-- LETTERHEAD -->
+      <div style="text-align:center;margin-bottom:8px;">
+        <img src="/static/images/NWUlogo.jpg" style="height:70px;width:auto;margin-bottom:4px;" alt="NWU Logo">
+        <h2 style="font-size:12pt;font-weight:700;letter-spacing:.05em;margin:4px 0 0;">NORTHWESTERN UNIVERSITY</h2>
+        <p style="font-size:9pt;margin:0;">Don Mariano Marcos Avenue, Laoag City, 2900, Ilocos Norte, Philippines</p>
+        <hr style="border:none;border-top:2px solid #000;margin:6px 0 0;">
+      </div>
+
+      <!-- HEADER ROW -->
+      <div style="display:flex;border:1.5px solid #000;margin:12px 0 14px;">
+        <div style="flex:1;text-align:center;font-weight:700;font-size:11pt;padding:6px 4px;border-right:1.5px solid #000;letter-spacing:.1em;">PROJECT PROPOSAL</div>
+        <div style="padding:6px 12px;font-weight:700;font-size:11pt;display:flex;align-items:center;white-space:nowrap;">OSA-F05A</div>
+      </div>
+
+      <!-- FIELDS -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">I.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Project Proposal Title:</strong>
+          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_title'))}</div>
         </div>
-        <div class="doc-hdr-row">
-          <div class="doc-hdr-title">PROJECT PROPOSAL</div>
-          <div class="doc-hdr-code">OSA-F05A</div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">II.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Sponsor / Organization:</strong>
+          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_sponsor'))}</div>
         </div>
-        <div class="di"><span class="di-n">I.</span><div class="di-b"><strong>Project Proposal Title:</strong><div class="uline">${esc(g('id_title'))}</div></div></div>
-        <div class="di"><span class="di-n">II.</span><div class="di-b"><strong>Sponsor / Organization:</strong><div class="uline">${esc(g('id_sponsor'))}</div></div></div>
-        <div class="di"><span class="di-n">III.</span><div class="di-b"><strong>Date & Venue:</strong><div class="uline">${esc(g('id_date_venue'))}</div></div></div>
-        <div class="di"><span class="di-n">IV.</span><div class="di-b"><strong>Target Participants:</strong><div class="uline">${esc(g('id_participation'))}</div></div></div>
-        <div class="di"><span class="di-n">V.</span><div class="di-b"><strong>Background / Rationale:</strong><div class="uline" style="white-space:pre-wrap;min-height:60px;">${esc(g('id_rationale'))}</div></div></div>
-        <div class="di"><span class="di-n">VI.</span><div class="di-b"><strong>Objectives:</strong>${objHTML || '<div class="uline">&nbsp;</div>'}</div></div>
-        <div class="di"><span class="di-n">VII.</span><div class="di-b"><strong>UNSDGs:</strong><div class="uline" style="white-space:pre-wrap;">${esc(g('id_unsdg'))}</div></div></div>
-        <div class="di"><span class="di-n">VIII.</span><div class="di-b"><strong>Approach / Process:</strong><div class="uline" style="white-space:pre-wrap;min-height:60px;">${esc(g('id_approach'))}</div></div></div>
-        <div class="di"><span class="di-n">IX.</span><div class="di-b"><strong>Expected Outcomes:</strong><div class="uline" style="white-space:pre-wrap;min-height:40px;">${esc(g('id_outcome'))}</div></div></div>
-        <div class="di"><span class="di-n">X.</span><div class="di-b"><strong>Budget</strong>
-          <div style="margin:8px 0 4px;"><strong>a. Proposed Budget:</strong> <span class="uline" style="width:auto;display:inline-block;min-width:120px;">₱ ${fmt(g('id_budget'))}</span></div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">III.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Date &amp; Venue:</strong>
+          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_date_venue'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">IV.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Target Participants:</strong>
+          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_participation'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">V.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Background / Rationale:</strong>
+          <div style="text-align:justify;white-space:pre-wrap;min-height:60px;padding:1px 3px;display:block;width:100%;">${esc(g('id_rationale'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">VI.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Objectives:</strong>
+          ${objHTML || '<div style="border-bottom:1px solid #000;min-height:18px;">&nbsp;</div>'}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">VII.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">UNSDGs:</strong>
+          <div style="text-align:justify;white-space:pre-wrap;padding:1px 3px;display:block;width:100%;">${esc(g('id_unsdg'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">VIII.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Approach / Process:</strong>
+          <div style="text-align:justify;white-space:pre-wrap;min-height:60px;padding:1px 3px;display:block;width:100%;">${esc(g('id_approach'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">IX.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Expected Outcomes:</strong>
+          <div style="text-align:justify;white-space:pre-wrap;min-height:40px;padding:1px 3px;display:block;width:100%;">${esc(g('id_outcome'))}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+        <span style="font-weight:700;min-width:42px;padding-top:1px;">X.</span>
+        <div style="flex:1;">
+          <strong style="text-align:left;display:block;">Budget</strong>
+          <div style="margin:8px 0 4px;">
+            <strong>a. Proposed Budget:</strong>
+            <span style="border-bottom:1px solid #000;width:auto;display:inline-block;min-width:120px;padding:1px 3px;">₱ ${fmt(g('id_budget'))}</span>
+          </div>
           <table style="width:100%;border-collapse:collapse;font-size:10pt;">
-            <thead><tr><th style="border:1px solid #000;">#</th><th style="border:1px solid #000;">Item</th><th style="border:1px solid #000;">Qty</th><th style="border:1px solid #000;">Unit</th><th style="border:1px solid #000;">Amount</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="border:1px solid #000;padding:4px 8px;">#</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Item</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Qty</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Unit Price</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Amount</th>
+              </tr>
+            </thead>
             <tbody>${budgetRowsHTML}</tbody>
-            <tfoot><tr><td colspan="4" style="border:1px solid #000;text-align:right;">TOTAL</td><td style="border:1px solid #000;text-align:right;">₱ ${fmt(grandTotal)}</td></tr></tfoot>
+            <tfoot>
+              <tr>
+                <td colspan="4" style="border:1px solid #000;padding:4px 8px;text-align:right;font-weight:700;">TOTAL</td>
+                <td style="border:1px solid #000;padding:4px 8px;text-align:right;font-weight:700;">₱ ${fmt(grandTotal)}</td>
+              </tr>
+            </tfoot>
           </table>
-          <div style="margin-top:8px;"><strong>c. Source of Funding:</strong> <span class="uline">${esc(g('id_funding_source'))}</span></div>
-        </div></div>
-      </div>
-      <div class="doc-page">
-        <p style="font-weight:700;">APPROVAL SIGNATURES</p>
-        <div class="p2-two-col">
-          <div class="p2-left">
-            <div class="p2-sig-blk"><div class="p2-sig-ln"></div><span class="p2-sig-lbl">President</span><div style="text-align:center;">${esc(g('id_sig_president'))}</div></div>
-            <div class="p2-sig-blk"><div class="p2-sig-ln"></div><span class="p2-sig-lbl">Adviser</span><div style="text-align:center;">${esc(g('id_sig_adviser'))}</div></div>
-          </div>
-          <div class="p2-right">
-            <div class="p2-sig-blk-r"><div class="p2-sig-ln"></div><span class="p2-sig-lbl">Dept Head</span><div style="text-align:center;">${esc(g('id_sig_dept'))}</div></div>
-            <div class="p2-sig-blk-r"><div class="p2-sig-ln"></div><span class="p2-sig-lbl">Dean</span><div style="text-align:center;">${esc(g('id_sig_dean'))}</div></div>
+          <div style="margin-top:8px;">
+            <strong>c. Source of Funding:</strong>
+            <span style="border-bottom:1px solid #000;display:inline-block;min-width:200px;padding:1px 3px;">${esc(g('id_funding_source'))}</span>
           </div>
         </div>
       </div>
+
+      <!-- APPROVAL SIGNATURES -->
+      <div style="margin-top:40px;">
+        <p style="font-weight:700;margin-bottom:20px;">APPROVAL SIGNATURES</p>
+        <div style="display:flex;gap:16px;">
+          <div style="flex:1;">
+            <div style="margin-bottom:28px;">
+              <div style="min-height:20px;text-align:center;width:210px;">${esc(g('id_sig_president'))}</div>
+              <div style="border-top:1px solid #000;margin-bottom:4px;width:210px;"></div>
+              <span style="font-style:italic;font-weight:700;font-size:10pt;text-align:center;width:210px;display:block;">Org President</span>
+            </div>
+            <div style="margin-bottom:28px;">
+              <div style="min-height:20px;text-align:center;width:210px;">${esc(g('id_sig_adviser'))}</div>
+              <div style="border-top:1px solid #000;margin-bottom:4px;width:210px;"></div>
+              <span style="font-style:italic;font-weight:700;font-size:10pt;text-align:center;width:210px;display:block;">Org Adviser</span>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:flex-end;">
+            <div style="margin-bottom:28px;text-align:right;">
+              <div style="min-height:20px;text-align:center;width:210px;">${esc(g('id_sig_dept'))}</div>
+              <div style="border-top:1px solid #000;margin-bottom:4px;width:210px;"></div>
+              <span style="font-style:italic;font-weight:700;font-size:10pt;text-align:center;width:210px;display:block;">Dept Head</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>`;
 }
 
@@ -244,26 +358,22 @@ window.onload = () => {
             this.style.pointerEvents = 'none';
 
             try {
-                // A. Create PDF Blob
-                const offscreenTemplate = document.createElement('div');
-                offscreenTemplate.innerHTML = buildDocHTML(); 
-                
+                // A. Generate PDF from HTML string (no DOM element needed)
                 const opt = {
                     margin: 10,
                     filename: 'proposal.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
-                const pdfBlob = await html2pdf().set(opt).from(offscreenTemplate).output('blob');
+                const pdfBlob = await html2pdf().set(opt).from(buildDocHTML()).output('blob');
 
                 // B. Prepare FormData (Hybrid)
                 const formData = new FormData();
                 formData.append('title', titleEl.value);
                 formData.append('proposal_file', pdfBlob, 'proposal.pdf');
 
-                // Auto-append all other form inputs for the JSON blob
                 document.querySelectorAll('#proposalForm input, #proposalForm textarea').forEach(input => {
                     if (input.name && input.type !== 'file') {
                         formData.append(input.name, input.value);
@@ -274,7 +384,7 @@ window.onload = () => {
                 formData.append('csrf_token', csrfToken);
 
                 // C. POST to Server
-                const response = await fetch('/create-proposal', {
+                const response = await fetch('/create-proposal' + window.location.search, {
                     method: 'POST',
                     body: formData
                 });

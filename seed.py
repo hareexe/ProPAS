@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 
 # Define your list
 orgs = ["Icons", "Hibe", "Kwago", "Casso", "Psych", "Aces"]
-offices = ["Osa", "Finance", "Vpaa", "Cas", "President"]
+offices = ["Osa", "Finance", "Vpaa", "Cas", "VicePresident", "President"]
 
 with app.app_context():
     db.create_all() 

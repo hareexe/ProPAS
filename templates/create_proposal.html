@@ -35,12 +35,11 @@
     <button onclick="goTo(4)">⑤ Signatories</button>
   </nav>
 
-  <form id="proposalForm" method="POST" action="{{ url_for('create_proposal', edit_id=edit_data.id if edit_data else None) }}">
+  <form id="proposalForm" method="POST" action="{{ url_for('proposal.create', edit_id=edit_data.id if edit_data else None) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="budget_items" id="id_budget_items" />
 
     <div class="form-body">
-
       <div class="form-section active" id="section-0">
         <div class="section-title">Project Overview</div>
         <div class="section-subtitle">Form sections I – IV of OSA-F05A.</div>
@@ -110,7 +109,6 @@
       <div class="form-section" id="section-3">
         <div class="section-title">Budget</div>
         <div class="section-subtitle">Form section X of OSA-F05A.</div>
-
         <div class="field" style="margin-bottom:18px;">
           <label>X-b. Itemization of Proposed Budget</label>
           <div class="bud-table-wrap">
@@ -157,7 +155,7 @@
         <div class="section-subtitle">Authorized signatures required for OSA-F05A submission.</div>
         <div class="sig-grid">
           <div class="sig-card">
-            <div class="sig-role">President / Project Coordinator</div>
+            <div class="sig-role">Org President / Project Coordinator</div>
             <input type="text" id="id_sig_president" name="signatory_ProjPresident" placeholder="Full name" 
                    value="{{ edit_data.proposal_data.get('signatory_ProjPresident', '') if edit_data else '' }}" />
           </div>
@@ -171,17 +169,13 @@
             <input type="text" id="id_sig_dept" name="signatory_dept_head" placeholder="Full name" 
                    value="{{ edit_data.proposal_data.get('signatory_dept_head', '') if edit_data else '' }}" />
           </div>
-          <div class="sig-card">
-            <div class="sig-role">College Dean</div>
-            <input type="text" id="id_sig_dean" name="signatory_dean" placeholder="Full name" 
-                   value="{{ edit_data.proposal_data.get('signatory_dean', '') if edit_data else '' }}" />
-          </div>
         </div>
       </div>
+    </div>
 
-    </div><div class="form-nav no-print">
+    <div class="form-nav no-print">
       <div class="form-nav-left">
-        <button type="button" class="btn btn-ghost" id="btnHome" data-url="{{ url_for('org_home') }}">← Home</button>
+        <button type="button" class="btn btn-ghost" id="btnHome" data-url="{{ url_for('proposal.org_home') }}">← Home</button>
         <button type="button" class="btn btn-ghost" id="btnBack" onclick="navigate(-1)" style="display:none">← Back</button>
         <span class="step-indicator">Step <strong id="currentStep">1</strong> of 5</span>
       </div>
@@ -208,6 +202,7 @@
     <div id="previewContent" style="max-height:78vh; overflow-y:auto; background:#e8e4de; padding:24px 0;"></div>
   </div>
 </div>
+
 <div id="printTarget" style="display:none;"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/propas.js') }}"></script>

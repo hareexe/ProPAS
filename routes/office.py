@@ -1,89 +1,120 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, abort
 from flask_login import login_required, current_user
-from models import db, Proposal
+from models import db, User, Proposal, ApprovalStep, DocumentApproval
+from utils import add_signature_page
+from datetime import datetime
 
-# Define the blueprint
 office_bp = Blueprint('office', __name__)
-
-# 1: Cas -> 2: Osa -> 3: Vpaa -> 4: Finance -> 5: President
-STAGE_MAP = {
-    'Cas': 1,
-    'Osa': 2,
-    'Vpaa': 3,
-    'Finance': 4,
-    'President': 5
-}
 
 @office_bp.route('/office-home', methods=['GET', 'POST'])
 @office_bp.route('/office-home/<int:review_id>', methods=['GET', 'POST'])
 @login_required
-def office_home(review_id=None):
-    # Identity Check
-    office_username = current_user.username 
-    my_stage = STAGE_MAP.get(office_username)
+def review(review_id=None):
+    my_step = ApprovalStep.query.filter(ApprovalStep.name.ilike(current_user.username)).first()
+    
+    if not my_step:
+        flash("Account not linked to a valid approval step.", "danger")
+        return redirect(url_for('auth.signin'))
 
-    # Security: Only 'Office' accounts can access this blueprint
-    if current_user.account_type != 'Office' or not my_stage:
-        flash("Unauthorized access to Office Dashboard.", "danger")
-        return redirect(url_for('signin'))
-
-    # --- HANDLE FORM SUBMISSION (Approve/Reject) ---
     if request.method == 'POST' and review_id:
-        proposal = Proposal.query.get_or_404(review_id)
-        action = request.form.get('action')
-        feedback = request.form.get('feedback')
+        prop = db.session.get(Proposal, review_id)
+        if not prop:
+            abort(404)
 
-        # Security: Prevent an office from acting on a document not at their stage
-        if proposal.current_stage != my_stage:
-            flash("Action denied: This proposal is no longer at your stage.", "danger")
-            return redirect(url_for('office.office_home'))
+        action = request.form.get('action')
+        officer_name = request.form.get('officer_name')
+        remarks = request.form.get('remarks')
+  
+        current_approval = DocumentApproval.query.filter_by(
+            document_id=prop.id, 
+            step_id=my_step.id
+        ).first()
 
         if action == 'approve':
-            # Move to next office in the sequence
-            proposal.current_stage += 1
+            if not officer_name:
+                flash("Officer name is required for the signature.", "warning")
+                return redirect(url_for('office.review', review_id=review_id))
+         
+            success = add_signature_page(
+                current_app.config['UPLOAD_FOLDER'], 
+                prop.file_path, 
+                my_step.name.upper(), 
+                officer_name
+            )
             
-            # If it passes the President (Stage 5), it's officially APPROVED
-            if proposal.current_stage > 5:
-                proposal.status = 'APPROVED'
+            if success:
+                current_approval.signed_name = officer_name
+                current_approval.status = 'approved'
+                current_approval.remarks = remarks
+                current_approval.approved_at = datetime.utcnow()
+
+                next_s = ApprovalStep.query.filter(
+                    ApprovalStep.step_order > my_step.step_order
+                ).order_by(ApprovalStep.step_order.asc()).first()
+
+                if next_s:
+                    prop.current_step_id = next_s.id
+                else:
+                    prop.status = 'APPROVED'
+                    prop.current_step_id = None
+                
+                flash(f"Proposal '{prop.title}' signed and forwarded.", "success")
             else:
-                proposal.status = 'PENDING' # Keep pending as it moves to next office
-            
-            flash(f"Proposal '{proposal.title}' approved and forwarded to the next office.", "success")
-        
+                flash("Failed to generate PDF signature. Please check file permissions.", "danger")
+
         elif action == 'reject':
-            # Memory Logic: Remember this office rejected it
-            proposal.last_rejected_by = my_stage
-            # Send back to Org (Stage 0)
-            proposal.current_stage = 0 
-            proposal.status = 'REJECTED'
-            # Save feedback so the Org knows why it was returned
-            proposal.description = f"REJECTION FEEDBACK from {office_username.upper()}: {feedback}"
-            
-            flash(f"Proposal '{proposal.title}' returned to Organization for corrections.", "warning")
+
+            current_approval.status = 'rejected'
+            current_approval.remarks = remarks
+            prop.status = 'REJECTED'
+   
+            prop.current_step_id = None 
+            flash(f"Proposal '{prop.title}' has been rejected and returned to the organization.", "warning")
 
         db.session.commit()
-        return redirect(url_for('office.office_home'))
-
-    # --- HANDLE DISPLAY LOGIC ---
-    # Fetch only proposals waiting at THIS specific desk
-    proposals = Proposal.query.filter_by(current_stage=my_stage).all()
-    
-    # Calculate Dynamic Stats
-    pending_count = len(proposals)
-    total_budget = sum(p.budget for p in proposals)
-
-    # If a specific proposal is being reviewed, fetch its details
-    selected_proposal = None
-    if review_id:
-        selected_proposal = Proposal.query.get(review_id)
+        return redirect(url_for('office.review'))
+ 
+    proposals = Proposal.query.filter_by(current_step_id=my_step.id).all()
+    selected = db.session.get(Proposal, review_id) if review_id else None
 
     return render_template(
         'office_home.html', 
         proposals=proposals, 
-        selected_proposal=selected_proposal,
-        username=office_username,
-        pending_count=pending_count,
-        total_budget="{:,.2f}".format(total_budget),
-        university_name="NWU",
-        city="Laoag"
+        selected_proposal=selected,
+        username=current_user.username,
+        pending_count=len(proposals)
     )
+
+# ... existing review function ...
+
+@office_bp.route('/master-history')
+@login_required
+def master_history():
+    """Global history for Office accounts to review all organizations."""
+    if current_user.account_type != 'Office':
+        abort(403)
+
+    query = Proposal.query.join(User)
+
+    # Global Search
+    search = request.args.get('search')
+    if search:
+        query = query.filter(Proposal.title.ilike(f'%{search}%'))
+
+    # Filter by specific Organization (Username)
+    username_filter = request.args.get('username_filter')
+    if username_filter:
+        query = query.filter(User.username.ilike(f'%{username_filter}%'))
+
+    # Apply Date Filter
+    date_from = request.args.get('date_from')
+    if date_from:
+        try:
+            date_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(Proposal.created_at >= date_obj)
+        except ValueError:
+            pass 
+
+    proposals = query.order_by(Proposal.created_at.desc()).all()
+    
+    return render_template('submission_history.html', proposals=proposals, is_history=True, is_office=True)

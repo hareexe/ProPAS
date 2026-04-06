@@ -14,28 +14,28 @@
 <div class="layout">
 
   <aside class="sidebar">
-  <div class="sidebar-logo">
-    <div class="header-seal">
-        <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="ProPAS Logo" class="header-logo-img">
+    <div class="sidebar-logo">
+      <div class="header-seal">
+          <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="ProPAS Logo" class="header-logo-img">
+      </div>
+      <div>
+        <span class="logo-text">ProPAS</span>
+        <span class="logo-sub">Org</span>
+      </div>
     </div>
-    <div>
-      <span class="logo-text">ProPAS</span>
-      <span class="logo-sub">Org</span>
-    </div>
-  </div>
 
     <div class="sidebar-divider"></div>
 
     <nav class="sidebar-nav">
-      <a href="{{ url_for('org_home') }}" class="nav-item active">
+      <a href="{{ url_for('proposal.org_home') }}" class="nav-item active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Dashboard
       </a>
-      <a href="{{ url_for('create_proposal') }}" class="nav-item">
+      <a href="{{ url_for('proposal.create') }}" class="nav-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
         Create Document
       </a>
-      <a href="{{ url_for('submission_history') }}" class="nav-item">
+      <a href="{{ url_for('proposal.history') }}" class="nav-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Submission History
       </a>
@@ -43,17 +43,16 @@
 
     <div class="sidebar-divider"></div>
 
-    <a href="{{ url_for('logout') }}" class="nav-item nav-item--danger">
+    <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item--danger">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Logout
     </a>
   </aside>
 
   <main class="main">
-
     <div class="topbar">
       <div>
-        <h1 class="topbar-title">Welcome, {{ current_user.username|upper if current_user.username else 'USER' }}</h1>
+        <h1 class="topbar-title">Welcome, {{ current_user.username|upper }}</h1>
         <p class="topbar-sub">Manage your project proposals and track approval status.</p>
       </div>
       <span class="account-badge">Organization Account</span>
@@ -91,17 +90,16 @@
 
     <div class="table-card">
       <div class="table-header">
-  <h2 class="table-title">Recent Project Submissions</h2>
-  
-  <div class="table-actions">
-    <a href="{{ url_for('create_proposal') }}" class="btn-new">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Create 
-    </a>  
-  </div>
-</div>
+        <h2 class="table-title">Recent Project Submissions</h2>
+        <div class="table-actions">
+          <a href="{{ url_for('proposal.create') }}" class="btn-new">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Create 
+          </a>  
+        </div>
+      </div>
 
       <div class="table-wrap">
         <table class="table">
@@ -114,59 +112,65 @@
               <th class="text-right">Action</th>
             </tr>
           </thead>
-         <tbody>
-{% for prop in proposals %}
-<tr>
-  <td>
-    <div class="doc-title">{{ prop.title }}</div>
-    <div class="doc-meta">ID: #{{ prop.id }} · {{ prop.proposal_data.get('sponsor', 'N/A') }}</div>
-    
-    {# NEW: Show the reason for rejection if the status is REJECTED #}
-    {% if prop.status == 'REJECTED' %}
-      <div style="margin-top: 8px; padding: 8px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px;">
-        <p style="font-size: 11px; color: #991b1b; margin: 0;"><strong>Rejection Note:</strong></p>
-        <p style="font-size: 12px; color: #b91c1c; font-style: italic; margin: 0;">
-          {% for app in prop.approvals if app.status == 'rejected' %}
-            "{{ app.remarks }}" — <small>{{ app.step.name }}</small>
+          <tbody>
+          {% for prop in proposals %}
+          <tr>
+            <td>
+              <div class="doc-title">{{ prop.title }}</div>
+              <div class="doc-meta">ID: #{{ prop.id }} · {{ prop.proposal_data.get('sponsor', 'N/A') }}</div>
+              
+              {% if prop.status == 'REJECTED' %}
+                <div style="margin-top: 8px; padding: 8px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px;">
+                  <p style="font-size: 11px; color: #991b1b; margin: 0;"><strong>Rejection Note:</strong></p>
+                  <p style="font-size: 12px; color: #b91c1c; font-style: italic; margin: 0;">
+                    {% for app in prop.approvals if app.status == 'rejected' %}
+                      "{{ app.remarks }}" — <small>{{ app.step.name }}</small>
+                    {% endfor %}
+                  </p>
+                </div>
+              {% endif %}
+            </td>
+            
+            <td class="td-muted">
+                {% if prop.creator.username|lower == 'icons' %}Computer Science
+                {% elif prop.creator.username|lower == 'hibe' %}Biology
+                {% elif prop.creator.username|lower == 'psych' %}Psychology
+                {% elif prop.creator.username|lower == 'kwago' %}Political Science
+                {% elif prop.creator.username|lower == 'aces' %}Engg/Comm
+                {% else %}{{ prop.creator.username }}
+                {% endif %}
+            </td>
+            <td class="td-muted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
+            
+            <td>
+              {% if prop.status == 'REJECTED' %}
+                <span class="status-badge status-badge--rejected" style="background: #fee2e2; color: #ef4444;">Returned / Rejected</span>
+              {% elif prop.status == 'APPROVED' %}
+                <span class="status-badge status-badge--approved">Fully Approved</span>
+              {% else %}
+                <span class="status-badge status-badge--pending">In Review</span>
+              {% endif %}
+            </td>
+            
+            <td class="text-right">
+              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                {% if prop.status == 'REJECTED' %}
+                  <a href="{{ url_for('proposal.create', edit_id=prop.id) }}" class="border border-red-500 text-red-500 px-3 py-1 rounded-lg hover:bg-red-50 transition text-xs font-semibold">
+                    Fix & Resubmit
+                  </a>
+                {% else %}
+                  <button class="btn-view">View Status</button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+            <tr><td colspan="5" style="text-align:center; padding: 40px; color: #94a3b8;">No proposals found.</td></tr>
           {% endfor %}
-        </p>
-      </div>
-    {% endif %}
-  </td>
-  
-  <td class="td-muted">{{ prop.proposal_data.get('department', 'N/A') }}</td>
-  <td class="td-muted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
-  
-  <td>
-    {% if prop.status == 'REJECTED' %}
-      <span class="status-badge status-badge--rejected" style="background: #fee2e2; color: #ef4444;">Returned / Rejected</span>
-    {% elif prop.status == 'APPROVED' %}
-      <span class="status-badge status-badge--approved">Fully Approved</span>
-    {% else %}
-      <span class="status-badge status-badge--pending">In Review (Step {{ prop.current_step_id }})</span>
-    {% endif %}
-  </td>
-  
-  <td class="text-right">
-    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-      {% if prop.status == 'REJECTED' %}
-        <a href="{{ url_for('create_proposal', edit_id=prop.id) }}" class="btn-view" style="border-color: #ef4444; color: #ef4444; text-decoration: none; padding: 6px 12px; font-weight: bold;">
-          Fix & Resubmit
-        </a>
-      {% else %}
-        <button class="btn-view">View Status</button>
-      {% endif %}
-    </div>
-  </td>
-</tr>
-{% else %}
-  <tr><td colspan="5" style="text-align:center; padding: 40px; color: #94a3b8;">No proposals found.</td></tr>
-{% endfor %}
-</tbody>
+          </tbody>
         </table>
       </div>
     </div>
-
   </main>
 </div>
 

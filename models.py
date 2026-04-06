@@ -25,6 +25,7 @@ class Proposal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     status = db.Column(db.String(20), default='PENDING')
+    version_number = db.Column(db.Integer, default=1)
     
     # file_path stores the local filename (e.g., "20260402_123.pdf")
     file_path = db.Column(db.String(300))
