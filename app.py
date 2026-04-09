@@ -56,11 +56,6 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         init_approval_steps()
-<<<<<<< HEAD
-    app.run(debug=True)
-=======
     
     port = int(os.environ.get("PORT", 5000))
-    
     app.run(host='0.0.0.0', port=port, debug=False)
->>>>>>> 34747ca1e375c473ab463a96b42c2b768b51a2f9
