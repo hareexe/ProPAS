@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ProPAS | Generator</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -37,6 +38,9 @@
 
   <form id="proposalForm" method="POST" action="{{ url_for('proposal.create', edit_id=edit_data.id if edit_data else None) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    {% if edit_data %}
+    <input type="hidden" name="edit_id" value="{{ edit_data.id }}" />
+    {% endif %}
     <input type="hidden" name="budget_items" id="id_budget_items" />
 
     <div class="form-body">

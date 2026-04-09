@@ -16,6 +16,20 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'propas.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# --- DYNAMIC DATABASE CONFIGURATION ---
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    if database_url.startswith("mysql://"):
+        database_url = database_url.replace("mysql://", "mysql+pymysql://", 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Local fallback
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'propas.db')
+# ---------------------------------------
+
 db.init_app(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
@@ -33,7 +47,7 @@ app.register_blueprint(office_bp)
 
 def init_approval_steps():
     if not ApprovalStep.query.first():
-        steps = [("CAS", 1), ("OSA", 2), ("FINANCE", 3), ("VPAA", 4), ("VICEPRESIDENT", 5), ("PRESIDENT", 6)]
+        steps = [("CAS", 1), ("OSA", 2), ("FINANCE", 3), ("VPAA", 4), ("VicePresident", 5), ("President", 6)]
         for name, order in steps:
             db.session.add(ApprovalStep(name=name, step_order=order))
         db.session.commit()

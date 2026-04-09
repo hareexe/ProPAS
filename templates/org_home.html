@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | ProPAS</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -49,13 +50,28 @@
     </a>
   </aside>
 
+  <div class="mobile-nav">
+    <a href="{{ url_for('proposal.org_home') }}" class="mobile-nav__item mobile-nav__item--active">Dashboard</a>
+    <a href="{{ url_for('proposal.create') }}" class="mobile-nav__item">Create</a>
+    <a href="{{ url_for('proposal.history') }}" class="mobile-nav__item">History</a>
+    <a href="{{ url_for('auth.logout') }}" class="mobile-nav__item mobile-nav__item--danger">Logout</a>
+  </div>
+
   <main class="main">
     <div class="topbar">
       <div>
         <h1 class="topbar-title">Welcome, {{ current_user.username|upper }}</h1>
         <p class="topbar-sub">Manage your project proposals and track approval status.</p>
       </div>
-      <span class="account-badge">Organization Account</span>
+      <div class="account-panel" aria-label="Account type">
+        <div class="account-panel__icon">
+          <img src="{{ url_for('static', filename='images/IconBlue.png') }}" alt="ProPAS icon" class="account-panel__icon-img">
+        </div>
+        <div class="account-panel__content">
+          <span class="account-panel__label">Account Type</span>
+          <span class="account-panel__value">Organization Account</span>
+        </div>
+      </div>
     </div>
 
     <div class="stats-grid">
@@ -88,6 +104,134 @@
       </div>
     </div>
 
+    {% if selected_proposal %}
+    <section class="status-panel">
+      <div class="status-panel__header">
+        <div>
+          <p class="status-panel__eyebrow">Proposal Tracking</p>
+          <h2 class="status-panel__title">{{ selected_proposal.title }}</h2>
+          <p class="status-panel__meta">
+            Document #{{ selected_proposal.id }} · Submitted {{ selected_proposal.created_at.strftime('%b %d, %Y') if selected_proposal.created_at else 'N/A' }}
+          </p>
+        </div>
+        <a href="{{ url_for('proposal.org_home') }}" class="btn-view">Back to Dashboard</a>
+      </div>
+
+      <div class="status-overview">
+        <div>
+          <div class="status-overview__label">Current Status</div>
+          <div class="status-overview__value">
+            {% if selected_proposal.status == 'APPROVED' %}
+              Fully Approved
+            {% elif selected_proposal.status == 'REJECTED' %}
+              Returned for Revision
+            {% else %}
+              In Review
+            {% endif %}
+          </div>
+          <p class="status-overview__summary">{{ status_summary }}</p>
+        </div>
+        <div class="status-pill-group">
+          {% if current_office %}
+          <span class="status-pill">Current Office: {{ current_office }}</span>
+          {% endif %}
+          {% if rejected_office %}
+          <span class="status-pill status-pill--danger">Returned by {{ rejected_office }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="progress-block">
+        <div class="progress-block__top">
+          <span class="progress-block__label">Approval Progress</span>
+          <span class="progress-block__percent">{{ progress_percent }}%</span>
+        </div>
+        <div class="progress-bar" aria-label="Proposal progress">
+          <div class="progress-bar__fill" style="width: {{ progress_percent }}%;"></div>
+        </div>
+      </div>
+
+      <div class="stepper-wrapper">
+        {% for step in tracker_steps %}
+        <div class="stepper-item stepper-item--{{ step.state }}">
+          <div class="step-counter">{{ loop.index }}</div>
+          <div class="step-name">{{ step.name }}</div>
+          <div class="step-caption">
+            {% if step.state == 'complete' %}
+              Approved
+            {% elif step.state == 'current' %}
+              In Review
+            {% elif step.state == 'rejected' %}
+              Returned
+            {% else %}
+              Waiting
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="feedback-list">
+        {% for step in tracker_steps if step.remarks %}
+        <article class="feedback-card feedback-card--{{ step.state }}">
+          <div class="feedback-card__header">
+            <div>
+              <p class="feedback-card__office">{{ step.name }}</p>
+              <p class="feedback-card__status">
+                {% if step.state == 'complete' %}
+                  Approved
+                {% elif step.state == 'rejected' %}
+                  Returned
+                {% else %}
+                  In Review
+                {% endif %}
+              </p>
+            </div>
+            <div class="feedback-card__meta">
+              {% if step.signed_name %}
+              <span>{{ step.signed_name }}</span>
+              {% endif %}
+              {% if step.approved_at %}
+              <span>{{ step.approved_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <p class="feedback-card__body">{{ step.remarks }}</p>
+        </article>
+        {% endfor %}
+      </div>
+
+      {% if selected_proposal.file_path %}
+      <section class="status-pdf">
+        <div class="status-pdf__header">
+          <div>
+            <p class="status-panel__eyebrow">Live Proposal File</p>
+            <h3 class="status-pdf__title">PDF with Added Office Signatures</h3>
+            <p class="status-panel__meta">This file stays visible throughout the approval flow so you can confirm when office signatures are appended.</p>
+          </div>
+          <div class="status-pdf__actions">
+            <a href="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}" download class="btn-new">Download PDF</a>
+            <a href="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer" class="btn-view">Open in New Tab</a>
+          </div>
+        </div>
+        <div class="status-pdf__frame">
+          <iframe
+            src="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}#toolbar=1&navpanes=0&scrollbar=1&view=FitH"
+            class="status-pdf__iframe"
+            title="Proposal PDF Viewer">
+          </iframe>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if rejection_remarks %}
+      <div class="status-note status-note--danger">
+        <strong>Review note:</strong> {{ rejection_remarks }}
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
     <div class="table-card">
       <div class="table-header">
         <h2 class="table-title">Recent Project Submissions</h2>
@@ -115,7 +259,7 @@
           <tbody>
           {% for prop in proposals %}
           <tr>
-            <td>
+            <td data-label="Document Title">
               <div class="doc-title">{{ prop.title }}</div>
               <div class="doc-meta">ID: #{{ prop.id }} · {{ prop.proposal_data.get('sponsor', 'N/A') }}</div>
               
@@ -131,7 +275,7 @@
               {% endif %}
             </td>
             
-            <td class="td-muted">
+            <td class="td-muted" data-label="Department">
                 {% if prop.creator.username|lower == 'icons' %}Computer Science
                 {% elif prop.creator.username|lower == 'hibe' %}Biology
                 {% elif prop.creator.username|lower == 'psych' %}Psychology
@@ -140,9 +284,9 @@
                 {% else %}{{ prop.creator.username }}
                 {% endif %}
             </td>
-            <td class="td-muted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
+            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
             
-            <td>
+            <td data-label="Status">
               {% if prop.status == 'REJECTED' %}
                 <span class="status-badge status-badge--rejected" style="background: #fee2e2; color: #ef4444;">Returned / Rejected</span>
               {% elif prop.status == 'APPROVED' %}
@@ -152,14 +296,16 @@
               {% endif %}
             </td>
             
-            <td class="text-right">
+            <td class="text-right" data-label="Action">
               <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 {% if prop.status == 'REJECTED' %}
                   <a href="{{ url_for('proposal.create', edit_id=prop.id) }}" class="border border-red-500 text-red-500 px-3 py-1 rounded-lg hover:bg-red-50 transition text-xs font-semibold">
                     Fix & Resubmit
                   </a>
                 {% else %}
-                  <button class="btn-view">View Status</button>
+                 <a href="{{ url_for('auth.view_status', proposal_id=prop.id) }}" class="btn-view">
+                  View Status
+                </a>
                 {% endif %}
               </div>
             </td>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal Details | ProPAS</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <div class="min-h-screen flex">
+        <aside class="w-64 bg-slate-900 text-white hidden md:flex flex-col sticky top-0 h-screen">
+            <div class="p-6 text-xl font-bold border-b border-slate-800 flex items-center gap-3">
+                <img src="{{ url_for('static', filename='images/Icon.png') }}" class="h-8 w-auto" alt="Logo">
+                <span>ProPAS <span class="text-blue-400">Office</span></span>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="{{ url_for('office.review') }}" class="flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 rounded-lg transition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    <span>Review Queue</span>
+                </a>
+                <a href="{{ url_for('office.master_history') }}" class="flex items-center gap-3 p-3 bg-blue-600 rounded-lg transition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>History</span>
+                </a>
+                <hr class="border-slate-800 my-4">
+                <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 sm:p-6 md:p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="md:hidden flex gap-2 overflow-x-auto pb-1">
+                    <a href="{{ url_for('office.review') }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">Review Queue</a>
+                    <a href="{{ url_for('office.master_history') }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white">History</a>
+                    <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600">Logout</a>
+                </div>
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div>
+                        <a href="{{ url_for('office.master_history') }}" class="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-semibold mb-3">
+                            <span class="mr-2">←</span> Back to History
+                        </a>
+                        <h1 class="text-3xl font-bold tracking-tight">{{ proposal.title }}</h1>
+                        <p class="text-slate-500 mt-2">Proposal #{{ proposal.id }} from {{ proposal.creator.username }} · {{ department_name }}</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full lg:w-auto">
+                        <a href="{{ url_for('office.master_history') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:border-slate-400 hover:text-slate-900 transition w-full sm:w-auto">
+                            Hide Details
+                        </a>
+                        <a href="{{ url_for('static', filename='uploads/' + proposal.file_path) }}" download class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition w-full sm:w-auto">
+                            Download PDF
+                        </a>
+                        <a href="{{ url_for('static', filename='uploads/' + proposal.file_path) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 transition w-full sm:w-auto">
+                            Open in New Tab
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                    <section class="xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+                            <div>
+                                <h2 class="font-semibold text-slate-800">Optimized PDF Viewer</h2>
+                                <p class="text-sm text-slate-500">Embedded viewer with fit-to-width defaults for easier reading.</p>
+                            </div>
+                            <span class="text-xs uppercase tracking-wider text-slate-400">PDF Preview</span>
+                        </div>
+                        <div class="h-[62vh] min-h-[420px] sm:h-[70vh] sm:min-h-[560px] bg-slate-200">
+                            <iframe
+                                src="{{ url_for('static', filename='uploads/' + proposal.file_path) }}#toolbar=1&navpanes=0&scrollbar=1&view=FitH"
+                                class="w-full h-full border-0"
+                                title="Proposal PDF Viewer">
+                            </iframe>
+                        </div>
+                    </section>
+
+                    <aside class="space-y-5">
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                            <h2 class="text-lg font-semibold text-slate-800 mb-4">Proposal Summary</h2>
+                            <dl class="space-y-4 text-sm">
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Organization</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ proposal.creator.username }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Department</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ department_name }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Submitted</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ proposal.created_at.strftime('%b %d, %Y %I:%M %p') if proposal.created_at else 'N/A' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Status</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ proposal.status }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Current Office</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ current_step_name or 'Completed / Returned' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Sponsor</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">{{ proposal.proposal_data.get('sponsor', 'N/A') if proposal.proposal_data else 'N/A' }}</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-2xl border border-blue-100 p-5">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-blue-700 mb-2">Viewer Tips</h3>
+                            <ul class="text-sm text-blue-900 space-y-2">
+                                <li>Use the built-in zoom controls in the PDF toolbar for clearer text.</li>
+                                <li>`Download PDF` saves the original file directly to your device.</li>
+                                <li>`Open in New Tab` is useful if you want the browser's full PDF tools.</li>
+                            </ul>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

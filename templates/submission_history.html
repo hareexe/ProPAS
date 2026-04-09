@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Submission History | ProPAS</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/org_home.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/submission_history.css') }}" />
 </head>
@@ -33,7 +34,7 @@
         Dashboard
       </a>
 
-      <a href="{{ url_for('proposal.history') }}" class="nav-item active">
+      <a href="{{ url_for('office.master_history') if current_user.account_type == 'Office' else url_for('proposal.history') }}" class="nav-item active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         History
       </a>
@@ -46,17 +47,22 @@
     </a>
   </aside>
 
+  <div class="mobile-nav">
+    <a href="{{ url_for('office.review') if current_user.account_type == 'Office' else url_for('proposal.org_home') }}" class="mobile-nav__item">Dashboard</a>
+    <a href="{{ url_for('office.master_history') if current_user.account_type == 'Office' else url_for('proposal.history') }}" class="mobile-nav__item mobile-nav__item--active">History</a>
+    <a href="{{ url_for('auth.logout') }}" class="mobile-nav__item mobile-nav__item--danger">Logout</a>
+  </div>
+
   <main class="main">
     <div class="topbar">
       <div>
         <h1 class="topbar-title">Submission History</h1>
         <p class="topbar-sub">View and filter all past project proposals.</p>
       </div>
-      <span class="account-badge">{{ current_user.account_type }} Account</span>
     </div>
 
     <div class="filter-card">
-      <form method="GET" action="{{ url_for('proposal.history') }}" class="filter-form">
+      <form method="GET" action="{{ url_for('office.master_history') if current_user.account_type == 'Office' else url_for('proposal.history') }}" class="filter-form">
         <div class="filter-group search">
           <label for="search">Search Title</label>
           <input type="text" id="search" name="search" placeholder="Enter document title..." value="{{ request.args.get('search', '') }}">
@@ -67,12 +73,9 @@
           <label for="username_filter">Organization / Dept</label>
           <select id="username_filter" name="username_filter">
             <option value="">All Organizations</option>
-            <option value="Icons" {% if request.args.get('username_filter') == 'Icons' %}selected{% endif %}>Icons (CS)</option>
-            <option value="Hibe" {% if request.args.get('username_filter') == 'Hibe' %}selected{% endif %}>Hibe (Bio)</option>
-            <option value="Psych" {% if request.args.get('username_filter') == 'Psych' %}selected{% endif %}>Psych (Psych)</option>
-            <option value="Kwago" {% if request.args.get('username_filter') == 'Kwago' %}selected{% endif %}>Kwago (PolSci)</option>
-            <option value="Aces" {% if request.args.get('username_filter') == 'Aces' %}selected{% endif %}>Aces (Engg)</option>
-            <option value="Casso" {% if request.args.get('username_filter') == 'Casso' %}selected{% endif %}>Casso</option>
+            {% for option in department_options %}
+            <option value="{{ option.username }}" {% if request.args.get('username_filter') == option.username %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
           </select>
         </div>
         {% endif %}
@@ -84,7 +87,7 @@
 
         <div class="filter-actions">
           <button type="submit" class="btn-filter">Apply Filters</button>
-          <a href="{{ url_for('proposal.history') }}" class="btn-reset">Reset</a>
+          <a href="{{ url_for('office.master_history') if current_user.account_type == 'Office' else url_for('proposal.history') }}" class="btn-reset">Reset</a>
         </div>
       </form>
     </div>
@@ -104,21 +107,26 @@
           <tbody>
           {% for prop in proposals %}
           <tr>
-            <td>
+            <td data-label="Document Title">
               <div class="doc-title">{{ prop.title }}</div>
               <div class="doc-meta">ID: #{{ prop.id }} · {{ prop.proposal_data.get('sponsor', 'N/A') }}</div>
             </td>
-            <td class="td-muted">
-                {% if prop.creator.username|lower == 'icons' %}Computer Science
-                {% elif prop.creator.username|lower == 'hibe' %}Biology
-                {% elif prop.creator.username|lower == 'psych' %}Psychology
-                {% elif prop.creator.username|lower == 'kwago' %}Political Science
-                {% elif prop.creator.username|lower == 'aces' %}Engg/Comm
-                {% else %}{{ prop.creator.username }}
+            <td class="td-muted" data-label="Department">
+                {% if current_user.account_type == 'Office' %}
+                  {{ department_map.get(prop.creator.username|lower, prop.creator.username) }}
+                {% else %}
+                  {% if prop.creator.username|lower == 'icons' %}Computer Science Dept
+                  {% elif prop.creator.username|lower == 'hibe' %}Biology Dept
+                  {% elif prop.creator.username|lower == 'psych' %}Psychology Dept
+                  {% elif prop.creator.username|lower == 'kwago' %}Political Science Dept
+                  {% elif prop.creator.username|lower == 'aces' %}Communication and English Studies
+                  {% elif prop.creator.username|lower == 'casso' %}CAS
+                  {% else %}{{ prop.creator.username }}
+                  {% endif %}
                 {% endif %}
             </td>
-            <td class="td-muted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'N/A' }}</td>
-            <td>
+            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'N/A' }}</td>
+            <td data-label="Status">
               {% if prop.status == 'APPROVED' %}
                 <span class="status-badge status-badge--approved" style="background: #ecfdf5; color: #059669;">Fully Approved</span>
               {% elif prop.status == 'REJECTED' %}
@@ -130,19 +138,23 @@
                     {% elif prop.current_step_id == 2 %}OSA
                     {% elif prop.current_step_id == 3 %}FINANCE
                     {% elif prop.current_step_id == 4 %}VPAA
-                    {% elif prop.current_step_id == 5 %}VICEPRESIDENT
+                    {% elif prop.current_step_id == 5 %}VP EXECUTIVE
                     {% elif prop.current_step_id == 6 %}PRESIDENT
                     {% else %}Processing
                     {% endif %}
                 </span>
               {% endif %}
             </td>
-            <td class="text-right">
+            <td class="text-right" data-label="Action">
               <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 {% if prop.status == 'REJECTED' and current_user.account_type == 'Org' %}
                   <a href="{{ url_for('proposal.create', edit_id=prop.id) }}" class="btn-view" style="color: #dc2626; border-color: #dc2626;">Fix & Resubmit</a>
                 {% else %}
+                  {% if current_user.account_type == 'Office' %}
+                  <a href="{{ url_for('office.proposal_details', proposal_id=prop.id) }}" class="btn-view">View Details</a>
+                  {% else %}
                   <button class="btn-view">View Details</button>
+                  {% endif %}
                 {% endif %}
               </div>
             </td>

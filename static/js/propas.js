@@ -125,7 +125,8 @@ async function downloadPDF() {
         filename: 'proposal.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
     };
     await html2pdf().set(opt).from(htmlString).save();
 }
@@ -153,13 +154,18 @@ function buildDocHTML() {
     const objHTML  = objLines.map((l, i) => `
         <div style="display:flex;gap:6px;margin-bottom:3px;">
             <span style="min-width:18px;">${i + 1}.</span>
-            <span style="flex:1;border-bottom:1px solid #000;min-height:17px;padding:1px 2px;white-space:pre-wrap;">${esc(l)}</span>
+            <span style="flex:1;min-height:17px;padding:1px 2px;white-space:pre-wrap;">${esc(l)}</span>
         </div>`).join('');
 
     return `
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: Arial, sans-serif; background: white; }
+      table { page-break-inside: auto; }
+      tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+      thead { display: table-header-group; }
+      tfoot { display: table-row-group; }
+      .avoid-break { page-break-inside: avoid; break-inside: avoid-page; }
     </style>
     <div style="background:white;max-width:794px;margin:0 auto;padding:36px 48px;font-family:Arial,sans-serif;font-size:10.5pt;color:#000;line-height:1.4;text-align:justify;">
 
@@ -182,7 +188,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">I.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Project Proposal Title:</strong>
-          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_title'))}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_title'))}</div>
         </div>
       </div>
 
@@ -190,7 +196,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">II.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Sponsor / Organization:</strong>
-          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_sponsor'))}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_sponsor'))}</div>
         </div>
       </div>
 
@@ -198,7 +204,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">III.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Date &amp; Venue:</strong>
-          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_date_venue'))}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_date_venue'))}</div>
         </div>
       </div>
 
@@ -206,7 +212,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">IV.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Target Participants:</strong>
-          <div style="border-bottom:1px solid #000;min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_participation'))}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_participation'))}</div>
         </div>
       </div>
 
@@ -222,7 +228,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">VI.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Objectives:</strong>
-          ${objHTML || '<div style="border-bottom:1px solid #000;min-height:18px;">&nbsp;</div>'}
+          ${objHTML || '<div style="min-height:18px;">&nbsp;</div>'}
         </div>
       </div>
 
@@ -250,7 +256,7 @@ function buildDocHTML() {
         </div>
       </div>
 
-      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
+      <div class="avoid-break" style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start;">
         <span style="font-weight:700;min-width:42px;padding-top:1px;">X.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Budget</strong>
@@ -258,7 +264,7 @@ function buildDocHTML() {
             <strong>a. Proposed Budget:</strong>
             <span style="border-bottom:1px solid #000;width:auto;display:inline-block;min-width:120px;padding:1px 3px;">₱ ${fmt(g('id_budget'))}</span>
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:10pt;">
+          <table class="avoid-break" style="width:100%;border-collapse:collapse;font-size:10pt;">
             <thead>
               <tr>
                 <th style="border:1px solid #000;padding:4px 8px;">#</th>
@@ -364,7 +370,8 @@ window.onload = () => {
                     filename: 'proposal.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
                 };
 
                 const pdfBlob = await html2pdf().set(opt).from(buildDocHTML()).output('blob');

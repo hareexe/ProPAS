@@ -3,8 +3,22 @@ from flask_login import login_required, current_user
 from models import db, User, Proposal, ApprovalStep, DocumentApproval
 from utils import add_signature_page
 from datetime import datetime
+from sqlalchemy.orm.attributes import flag_modified
 
 office_bp = Blueprint('office', __name__)
+
+ORG_DEPARTMENTS = {
+    'icons': 'Computer Science Dept',
+    'hibe': 'Biology Dept',
+    'psych': 'Psychology Dept',
+    'kwago': 'Political Science Dept',
+    'aces': 'Communication and English Studies',
+    'casso': 'CAS',
+}
+
+def _get_printed_name(user):
+    profile = user.profile_data or {}
+    return (profile.get('printed_name') or '').strip()
 
 @office_bp.route('/office-home', methods=['GET', 'POST'])
 @office_bp.route('/office-home/<int:review_id>', methods=['GET', 'POST'])
@@ -22,8 +36,8 @@ def review(review_id=None):
             abort(404)
 
         action = request.form.get('action')
-        officer_name = request.form.get('officer_name')
         remarks = request.form.get('remarks')
+        printed_name = (request.form.get('printed_name') or _get_printed_name(current_user)).strip()
   
         current_approval = DocumentApproval.query.filter_by(
             document_id=prop.id, 
@@ -31,22 +45,27 @@ def review(review_id=None):
         ).first()
 
         if action == 'approve':
-            if not officer_name:
-                flash("Officer name is required for the signature.", "warning")
+            if not printed_name:
+                flash("Set your printed name first so it can be used as your digital signature.", "warning")
                 return redirect(url_for('office.review', review_id=review_id))
+
+            profile = dict(current_user.profile_data or {})
+            profile['printed_name'] = printed_name
+            current_user.profile_data = profile
          
             success = add_signature_page(
                 current_app.config['UPLOAD_FOLDER'], 
                 prop.file_path, 
                 my_step.name.upper(), 
-                officer_name
+                printed_name
             )
             
             if success:
-                current_approval.signed_name = officer_name
+                current_approval.signed_name = printed_name
                 current_approval.status = 'approved'
                 current_approval.remarks = remarks
                 current_approval.approved_at = datetime.utcnow()
+                current_approval.approved_by = current_user.id
 
                 next_s = ApprovalStep.query.filter(
                     ApprovalStep.step_order > my_step.step_order
@@ -82,8 +101,30 @@ def review(review_id=None):
         proposals=proposals, 
         selected_proposal=selected,
         username=current_user.username,
-        pending_count=len(proposals)
+        pending_count=len(proposals),
+        printed_name=_get_printed_name(current_user)
     )
+
+@office_bp.route('/office-profile', methods=['POST'])
+@login_required
+def update_profile():
+    if current_user.account_type != 'Office':
+        abort(403)
+
+    printed_name = (request.form.get('printed_name') or '').strip()
+    profile = dict(current_user.profile_data or {})
+    profile['printed_name'] = printed_name
+    current_user.profile_data = profile
+    flag_modified(current_user, 'profile_data')
+    db.session.add(current_user)
+    db.session.commit()
+
+    if printed_name:
+        flash("Printed name saved. It will now be used as your digital signature.", "success")
+    else:
+        flash("Printed name cleared.", "warning")
+
+    return redirect(url_for('office.review'))
 
 # ... existing review function ...
 
@@ -94,7 +135,7 @@ def master_history():
     if current_user.account_type != 'Office':
         abort(403)
 
-    query = Proposal.query.join(User)
+    query = Proposal.query.join(User, Proposal.creator_id == User.id).filter(User.account_type == 'Org')
 
     # Global Search
     search = request.args.get('search')
@@ -102,9 +143,9 @@ def master_history():
         query = query.filter(Proposal.title.ilike(f'%{search}%'))
 
     # Filter by specific Organization (Username)
-    username_filter = request.args.get('username_filter')
+    username_filter = (request.args.get('username_filter') or '').strip()
     if username_filter:
-        query = query.filter(User.username.ilike(f'%{username_filter}%'))
+        query = query.filter(User.username.ilike(username_filter))
 
     # Apply Date Filter
     date_from = request.args.get('date_from')
@@ -117,4 +158,43 @@ def master_history():
 
     proposals = query.order_by(Proposal.created_at.desc()).all()
     
-    return render_template('submission_history.html', proposals=proposals, is_history=True, is_office=True)
+    department_options = [
+        {'username': 'Icons', 'label': 'Icons - Computer Science Dept'},
+        {'username': 'Hibe', 'label': 'Hibe - Biology Dept'},
+        {'username': 'Psych', 'label': 'Psych - Psychology Dept'},
+        {'username': 'Kwago', 'label': 'Kwago - Political Science Dept'},
+        {'username': 'Aces', 'label': 'Aces - Communication and English Studies'},
+        {'username': 'Casso', 'label': 'Casso - CAS'},
+    ]
+
+    return render_template(
+        'submission_history.html',
+        proposals=proposals,
+        is_history=True,
+        is_office=True,
+        department_options=department_options,
+        department_map=ORG_DEPARTMENTS
+    )
+
+@office_bp.route('/proposal-details/<int:proposal_id>')
+@login_required
+def proposal_details(proposal_id):
+    """Detailed PDF viewer for office accounts."""
+    if current_user.account_type != 'Office':
+        abort(403)
+
+    proposal = db.session.get(Proposal, proposal_id)
+    if not proposal:
+        abort(404)
+
+    current_step_name = None
+    if proposal.current_step_id:
+        current_step = db.session.get(ApprovalStep, proposal.current_step_id)
+        current_step_name = current_step.name if current_step else None
+
+    return render_template(
+        'office_proposal_detail.html',
+        proposal=proposal,
+        department_name=ORG_DEPARTMENTS.get(proposal.creator.username.lower(), proposal.creator.username),
+        current_step_name=current_step_name
+    )

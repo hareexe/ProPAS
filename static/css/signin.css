@@ -6,9 +6,9 @@
     font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-/* Royal Blue Background */
+/* Navy Background */
 body {
-    background-color: #4169E1; 
+    background-color: #0f1f3d;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -100,7 +100,7 @@ input:focus {
 .login-btn {
     width: 100%;
     padding: 15px;
-    background-color: #2563eb;
+    background-color: #0f1f3d;
     border: none;
     border-radius: 10px;
     color: white;
@@ -112,7 +112,7 @@ input:focus {
 }
 
 .login-btn:hover {
-    background-color: #1d4ed8;
+    background-color: #162944;
 }
 
 /* Footer Links */

@@ -13,12 +13,12 @@ def add_signature_page(upload_folder, file_path, role_key, officer_name):
         can = canvas.Canvas(packet, pagesize=LETTER)
    
         roles_config = {
-            "CAS": {"x": 70, "y": 680, "label": "Dean of Students Affairs"},
-            "OSA": {"x": 350, "y": 750, "label": "RECOMMENDING APPROVAL:", "is_header": True},
-            "VPAA": {"x": 350, "y": 600, "label": "Vice President For Academic Affairs"},
-            "FINANCE": {"x": 70, "y": 500, "label": "Vice President for Finance", "extra": "Itemized Budget Reviewed by:"},
-            "VICEPRESIDENT": {"x": 350, "y": 450, "label": "Executive Vice President", "header": "APPROVED:"},
-            "PRESIDENT": {"x": 350, "y": 300, "label": "President"}
+            "CAS": {"x": 60, "y": 690, "label": "CAS Dean", "header": "Received and Noted by:"},
+            "OSA": {"x": 360, "y": 690, "label": "Dean of OSA", "header": "Recommending Approval:"},
+            "FINANCE": {"x": 60, "y": 445, "label": "Vice President of Finance", "header": "Itemized Budget Reviewed by:"},
+            "VPAA": {"x": 360, "y": 445, "label": "Vice President for Academic Affairs"},
+            "VICEPRESIDENT": {"x": 60, "y": 200, "label": "Executive Vice President", "header": "Approved:"},
+            "PRESIDENT": {"x": 360, "y": 200, "label": "President"}
         }
 
         for key, cfg in roles_config.items():
@@ -27,14 +27,6 @@ def add_signature_page(upload_folder, file_path, role_key, officer_name):
             if "header" in cfg:
                 can.setFont("Helvetica-Bold", 11)
                 can.drawString(x, y + 60, cfg["header"])
-            elif cfg.get("is_header"):
-                can.setFont("Helvetica-Bold", 11)
-                can.drawString(x, y + 30, cfg["label"])
-                continue 
-
-            if "extra" in cfg:
-                can.setFont("Helvetica-Bold", 10)
-                can.drawString(x, y + 60, cfg["extra"])
 
             can.setLineWidth(1)
             can.line(x, y + 15, x + 220, y + 15)

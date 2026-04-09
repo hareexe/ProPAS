@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy.ext.mutable import MutableDict
 
 db = SQLAlchemy()
 
@@ -13,7 +14,7 @@ class User(UserMixin, db.Model):
     account_type = db.Column(db.String(20))  # 'Org' or 'Office'
     
     # JSON for flexible profile info (contact, department, etc.)
-    profile_data = db.Column(db.JSON, default={}) 
+    profile_data = db.Column(MutableDict.as_mutable(db.JSON), default=dict) 
 
     # Relationship to proposals they created
     proposals = db.relationship('Proposal', backref='creator', lazy=True)
