@@ -6,8 +6,6 @@ Werkzeug==3.1.7
 WTForms==3.2.1
 SQLAlchemy==2.0.48
 PyMySQL==1.1.2
-psycopg2-binary==2.9.11
 gunicorn==25.0.0
 pypdf==6.0.0
 reportlab==4.4.1
-cryptography==45.0.0

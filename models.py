@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
 
     # Relationship to proposals they created
     proposals = db.relationship('Proposal', backref='creator', lazy=True)
+    notifications = db.relationship('Notification', backref='recipient', lazy=True)
 
 
 # ---------------- PROPOSAL ----------------
@@ -95,3 +96,18 @@ class DocumentLog(db.Model):
 
     document = db.relationship('Proposal', backref=db.backref('logs', lazy=True))
     performer = db.relationship('User')
+
+
+# ---------------- NOTIFICATIONS ----------------
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    proposal_id = db.Column(db.Integer, db.ForeignKey('proposals.id'), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    notification_type = db.Column(db.String(30), default='info')
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    proposal = db.relationship('Proposal', backref=db.backref('notifications', lazy=True))

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_user, logout_user, current_user, login_required 
 from werkzeug.security import check_password_hash
-from models import User, Proposal, ApprovalStep
+from models import User, Proposal, ApprovalStep, Notification
 auth_bp = Blueprint('auth', __name__)
 
 OFFICE_DISPLAY_NAMES = {
@@ -51,6 +51,8 @@ def view_status(proposal_id):
     pending = Proposal.query.filter_by(creator_id=current_user.id, status='PENDING').count()
     approved = Proposal.query.filter_by(creator_id=current_user.id, status='APPROVED').count()
     rejected = Proposal.query.filter_by(creator_id=current_user.id, status='REJECTED').count()
+    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
+    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
 
     steps = ApprovalStep.query.order_by(ApprovalStep.step_order).all()
     approvals_by_step = {approval.step_id: approval for approval in selected_proposal.approvals}
@@ -112,7 +114,9 @@ def view_status(proposal_id):
         rejection_remarks=rejection_remarks,
         pending_count=pending,
         approved_count=approved,
-        rejected_count=rejected
+        rejected_count=rejected,
+        notifications=notifications,
+        unread_notifications=unread_notifications,
     )
 
 @auth_bp.route('/logout')

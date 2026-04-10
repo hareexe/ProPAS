@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, abort
 from flask_login import login_required, current_user
-from models import db, User, Proposal, ApprovalStep, DocumentApproval
+from models import db, User, Proposal, ApprovalStep, DocumentApproval, Notification
 from utils import add_signature_page
 from datetime import datetime
 from sqlalchemy.orm.attributes import flag_modified
@@ -19,6 +19,55 @@ ORG_DEPARTMENTS = {
 def _get_printed_name(user):
     profile = user.profile_data or {}
     return (profile.get('printed_name') or '').strip()
+
+
+def _create_notification(recipient_id, proposal_id, title, message, notification_type='info'):
+    db.session.add(Notification(
+        recipient_id=recipient_id,
+        proposal_id=proposal_id,
+        title=title,
+        message=message,
+        notification_type=notification_type,
+    ))
+
+
+def _notify_next_office_and_org(proposal, approving_step, next_step):
+    org_title = 'Proposal Approved'
+    if next_step:
+        org_message = (
+            f"Your proposal '{proposal.title}' was approved by {approving_step.name} "
+            f"and is now forwarded to {next_step.name}."
+        )
+    else:
+        org_message = f"Your proposal '{proposal.title}' was approved by {approving_step.name} and is now fully approved."
+
+    _create_notification(
+        recipient_id=proposal.creator_id,
+        proposal_id=proposal.id,
+        title=org_title,
+        message=org_message,
+        notification_type='success',
+    )
+
+    if not next_step:
+        return
+
+    office_accounts = User.query.filter(
+        User.account_type == 'Office',
+        User.username.ilike(next_step.name)
+    ).all()
+
+    for office_account in office_accounts:
+        _create_notification(
+            recipient_id=office_account.id,
+            proposal_id=proposal.id,
+            title='New Proposal Received',
+            message=(
+                f"Proposal '{proposal.title}' from {proposal.creator.username} was approved by "
+                f"{approving_step.name} and is now in your review queue."
+            ),
+            notification_type='info',
+        )
 
 @office_bp.route('/office-home', methods=['GET', 'POST'])
 @office_bp.route('/office-home/<int:review_id>', methods=['GET', 'POST'])
@@ -76,6 +125,8 @@ def review(review_id=None):
                 else:
                     prop.status = 'APPROVED'
                     prop.current_step_id = None
+
+                _notify_next_office_and_org(prop, my_step, next_s)
                 
                 flash(f"Proposal '{prop.title}' signed and forwarded.", "success")
             else:
@@ -94,6 +145,8 @@ def review(review_id=None):
         return redirect(url_for('office.review'))
  
     proposals = Proposal.query.filter_by(current_step_id=my_step.id).all()
+    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
+    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
     selected = db.session.get(Proposal, review_id) if review_id else None
 
     return render_template(
@@ -102,7 +155,9 @@ def review(review_id=None):
         selected_proposal=selected,
         username=current_user.username,
         pending_count=len(proposals),
-        printed_name=_get_printed_name(current_user)
+        printed_name=_get_printed_name(current_user),
+        notifications=notifications,
+        unread_notifications=unread_notifications,
     )
 
 @office_bp.route('/office-profile', methods=['POST'])

@@ -1,0 +1,961 @@
+
+
+
+Project Proposal Automation System (ProPAS) for 
+Northwestern University Student Organizations
+
+
+
+A Research Proposal presented to the faculty of the College of Arts and Sciences, Department of Computer Science.
+
+
+In Partial Fulfillment of the Requirements for the degree of
+Bachelor of Science in Computer Science
+
+
+
+
+BY:
+
+RENIER CANDIDO
+TIMOTHY ORPILLA
+PRINCESS KYLA LORENZO
+Researchers
+
+
+
+ROWELL L. CASIL, MSCS
+Adviser
+
+
+
+
+
+
+
+2025
+
+
+
+Table of Contents
+	 TOC \h \u \z \t &quot;Heading 1,1,Heading 2,2,Heading 3,3,Heading 4,4,Heading 5,5,Heading 6,6,&quot;Introduction	3
+	Literature Review	5
+	Workflow Automation in Higher Education	5
+	Project Proposal Systems and Workflow Management	7
+	University Organization Management Systems	8
+	Paperless Universities and Green ICT Initiatives	10
+	User Adoption and Change Management in University Digital Systems	12
+	Research Gaps	14
+	Research Framework	15
+	Theoretical Underpinning	15
+	Research Paradigm	18
+	Research Objectives	20
+	Methods	21
+	Research Design	21
+	Participants	22
+	Research Instrument	22
+	Data Gathering Procedure	23
+	Data Analysis	24
+	Ethical Considerations	25
+	Bibliography	26
+	Appendices	31
+	Preliminary Survey Questionnaire	31
+	Students Survey	31
+	Administrators Survey	33
+	Evaluation Questionnaire	34
+	Students Survey	34
+	Administrators Survey	37
+	Curriculum Vitae	39
+
+
+Introduction
+	Information technologies are now widely used in various fields, involving the use of communications and databases. The introduction of universal digitalization is a global process covering all sectors, from social to academic and technological aspects of documentation (Grafova, Mishchenko, Mietova, Feygel, 2021). The process of digitalizing and automating utilizes technology, which highlights that 21st-century school records are out of date. The need to embrace information and communication technology in storing, processing, and disseminating information is rising. 
+Globally, automation has changed organizational procedures, simplifying operations and increasing the effectiveness of government agencies as well as other sectors (Ng et al. and Aldoseri et al., 2023). It has been demonstrated that an automated workflow system does, in fact, have a favorable impact on the effectiveness, dependability, and openness of management systems in organizations.
+In the Philippines, colleges are democratizing opportunities for work and process automation through the use of Information Technology (IT)and the usage of various learning management and administrative monitoring systems (Caroro & Hernandez, 2018). These technologies help to handle academic and organizational activities more efficiently in addition to improving and speeding up typically manual operations. These platforms greatly reduce paper waste by reducing dependency on physical papers, which benefits higher education institutions' sustainability and cost-effectiveness.
+In Northwestern University, there’s an existing Document Tracking System (DTS), but it tracks hardcopy documents and the exclusion of student organizations from it justifies the need for Project Proposal Automation System for Northwestern University Student Organizations(ProPAS), you still have to visit the offices physically to hand them the papers. This study aims to  create a digital processing of proposals, monitoring, and also unified document generator following university formats that can be used by student organizations. With this web-based system student leaders can prepare, submit, and monitor their project proposals digitally. Contemporary literature shows that moving from these traditional ways to integrated digital platforms not only significantly reduces bureaucratic burdens but also improves transparency and efficiency (Renna & Colonnese, 2025; Rajagopal et al., 2024). 
+The current paper-based system in the submission and approval of project proposals in Northwestern University places a heavy burden on student leaders. A significant portion of this burden comes from the repeated revisions required throughout the approval process. Each revision triggers an inefficient cycle of reprinting, resubmitting, and visiting multiple offices for in-person reviews. This back-and-forth process not only consumes several hours but also leads to unnecessary delays and resource wastage. Implementing a digitalized workflow would streamline revisions through real-time editing and centralized feedback.  By digitalizing the process, it can significantly reduce the reliance on paper (Kim, 2021). 
+“Project Proposal Automation System for Northwestern University Student Organizations (ProPAS)” is a web-based campus organization document. Utilizing technology for campus organizations, this system will offer an innovative solution in handling organization documents for both student leaders and office administrators. The focus of this study is to automate the process of document flow. Automating the processes through digital platforms is a solution that not only reduces the administrative burden but also improves the quality of university life.
+Literature Review 
+	Digital Transformation in Higher Education the integration of digital platforms in universities has accelerated due to the need for efficient data handling and student engagement. Alt(2021) emphasizes that Campus Management Systems (CMS) are increasingly adopted to streamline administrative processes, improve service delivery, and support strategic decision-making. 
+Workflow Automation in Higher Education
+Over the past few years, workflow management system usage has increased in importance as organizations seek to optimize their processes and improve productivity. Universities are no exception, as they have to deal with complex processes involving academic advising, research administration, course scheduling, student admissions, and numerous other responsibilities. It often becomes imperative to adapt existing workflow management systems to address specific institution requirements. They may need key features such as support for complex approval processes and integration with existing academic systems. A workflow management system that is specifically tailored is thus needed to meet the special requirements of universities and improve the overall efficiency of their processes (Ayodeji & Olubiyi, 2020).
+In a State College in Northern Mindanao, Philippines, the SUC has built school systems to meet challenging demands of digitalization in managing schools (Grepon et al., 2021). As the school continued to utilize the school management system, the need for increasingly more subsystems and modules were required to meet some administrative and academic issues on paperless transactions and report generation.
+Hassan et al. conducted an e-school system development on a number of cross-platforms. Utilizing the Flutter framework and native PHP and MySQL as their backend, is comparable to the study at hand since it utilizes the same framework, thus supporting numerous operating systems. The objectives of this study are to aid school administration, enhance community education, and enhance academic performance.
+As per research conducted by Gonugunta and Leo (2024), ERP systems integrate scholarly and administrative processes such as learning management, finance, human resources, and student information management onto one virtual platform; they are now imperative in higher education institutions (HEIs). As per their findings, the need for centralized data management, institutional expansion, compliance with regulations, and advancements in cloud computing and artificial intelligence are the key drivers of ERP adoption in higher education.
+Based on the research of Capulong, De Guia, Dela Cruz, and Umali (2024), the use of Electronic Document Management Systems (EDMS) in higher education institutions contributes greatly to the simplification of administrative processes, easy access, and minimization of use of paper-based systems. Their research showed that EDMS promotes organizational efficiency through secure storage, quicker retrieval, and orderly processing of academic and administrative documents.
+Project Proposal Systems and Workflow Management
+The creation of a tailored workflow management system (WMS) via Flutter and Firebase, specifically designed for a university's academic department, significantly minimized delays in academic and administrative approvals, enhanced task distribution, and increased stakeholder communication through the implementation of automated reminders, real-time status reporting, and user-definable approval processes; these enhancements illustrate how well-crafted WMS can simplify proposal-related activities and administrative flows within higher education (Adedapo et al., 2023).
+Student Project Management System (SPMS) built for University of Ibadan brings proposal submission, project tracking, document management, and supervisor-student dialogue onto one web-based system; this blended system enhanced transparency across project life cycle phases, increased feedback loops, and minimized administrative bottlenecks; demonstrating that putting numerous phases of project proposal and performance into one workflow system has the potential to achieve smoother management and improved results (Arowolo, Olayinka, and Akinola, 2024).
+A workflow management system with &quot;smart procedures&quot;, i.e. dynamic rules that make flow paths, automated decision points, and conditional branching decisions; can greatly enhance efficiency, cut processing time, and respond to shifting user needs; these aspects would be especially applicable in settings where proposal submissions would have to pass through various layers of approvals with potential revisions, meaning that the same design considerations would be beneficial in automating student organization project proposal systems (Chmiel, et al., 2022).
+The e-collaboration tool that they created for the coordination of final-year student projects includes proposal processing, assignment of projects, monitoring progress, and assessment in one integrated platform; through coordination among students, advisors, and administrative personnel, the tool decreases delays, enhances transparency of every stage, and keeps proposals handled more orderly and accountable; all of which are directly implementable lessons in creating a Project Proposal Automation System (Lounas, Hamzaoui, Bouguelmouna, and Mokrani, 2023).
+Automating processes of academic evaluation through web-based platforms demonstrates how routing based on rules, automated forms, and logging in one place significantly lower turnaround time, minimize errors, and avoid data loss; though applied to the context of evaluation as opposed to proposal systems, the functionalities they highlight are eminently applicable to the design of proposal workflow systems that need similar mechanisms of submission, routing, approval, and record keeping (Zamfiroiu and Vasile, 2024).
+University Organization Management Systems
+Utilizing an ICT-based organizational management system enables universities to effectively capture, monitor, and report organizational activities like membership information, event attendance, and administration compliance. This strategy enhances precision, transparency, and evidence-based decision-making in managing student organizations to the extent that institutional support is apportioned fairly based on accurate data. Centralized computer systems thus maximize coordination, reporting, and performance assessment among student-led organizations (Li & Zhang, 2023).
+Management innovation of student associations involves the implementation of an institutionalized digital platform incorporating membership enrollment, event planning, performance assessment, and communication activities. The platforms enhance transparency, accountability, and participation while guaranteeing sustainable development for both traditional and new associations. Through the integration of information technology and institutional regulations, universities can update their management of student organizations to align with overall educational goals (Xie, 2025).
+Digitizing student records and registration services in private universities promotes administrative efficiency, reduces delays, and increases record accuracy. The integration of electronic systems not only simplifies academic transactions but also assists in monitoring student engagement across organizations to better manage and monitor organizational activity. This emphasizes how digital transformation aids more efficient university organization management and enhanced workflow (Purcia & Velarde, 2022).
+Management Information Systems (MIS) are now a necessity in contemporary university administration, especially to enhance record-keeping, monitoring staff and student information, and automating decision-making. Their adoption increases coordination, accountability, and communication among departments, resulting in more effective organizational operations. Nonetheless, issues like inadequate infrastructure and inadequate training of staff remain to be tackled to ensure that MIS tools can be used sustainably to manage university organizations (Ogundipe, Anise, Adelana, & Adeniji, 2023).
+Cognitive models can be used in the development of university management software to significantly improve usability and effectiveness. Organizing information in the system through hierarchical clustering and card sorting makes navigation and retrieval easy for users, enhancing the adoption of the system as a whole. User experience principles are hence critical in the development of friendly, accessible, and effective student and administrator organization management systems (Shi & Qin, 2023).
+Paperless Universities and Green ICT Initiatives
+The University of Sharjah’s transition to paperless operations during the COVID-19 pandemic demonstrated how crisis-driven digital adoption can accelerate sustainability. By digitizing administrative processes, course delivery, and communication platforms, the university recorded a 53% drop in paper usage between 2019 and 2020, with a further 38% reduction the following year. The project demonstrated that online learning management systems, electronic authorizations, and digital documentation could effectively substitute for conventional paper-based business processes to achieve both operational effectiveness and sustainable advantages (University of Sharjah, 2022).
+Ain Shams University's green campus project incorporated the &quot;3R's&quot; concept: Reduce, Reuse, and Recycle, within its larger Green ICT initiative. This involved the digitization of academic and administrative functions in the form of online tests, electronic payments, and barcode-based service systems. The university further facilitated this shift with awareness campaigns to promote behavioral change among staff and students. These initiatives as a whole placed the institution as a paperless university transformation model in line with the country's sustainability objectives (Elagroudy, Elbardisy, Hassan, Saoud, & El-Meteini, 2023).
+A Turkish university study investigated the predictors of academic and administrative staff uptake of paperless technology through the Unified Theory of Acceptance and Use of Technology (UTAUT) model. The findings indicated that performance expectancy, effort expectancy, and social influence had a strong prediction of behavioral intention to use digital systems, and facilitating conditions had an impact on sustained use. This means that institutional culture and technological preparedness are the determinants for successful and sustainable paperless transformations (Tatlı, Bıyıkbeyi, Gençer Çelik, & Öngel, 2024).
+A systematic review of Spanish digital education innovations discovered that the incorporation of ICT in teaching, assessment, and communication is a major contributor to sustainability in universities. The research found that institutions are striving to minimize paper usage with digital platforms, virtual learning environments, and cloud-based management systems, which together promote environmentally friendly practice. Such digitalization of education proves that technological innovation and sustainability are achievable simultaneously in higher education (García-Hernández, García-Valcárcel Muñoz-Repiso, Casillas-Martín, & Cabezas-González, 2023).
+Studies on Green ICT adoption among Philippine higher education institutions discovered that universities are increasingly adopting paperless archiving systems, energy-efficient technology, and electronic documentation software. Universities also enhance environmental awareness programs and responsible digital behavior as components of their green agenda. Even though in its developing phase, these practices reflect rising institutional acknowledgment of Green ICT as a way toward minimizing environmental footprints and encouraging eco-friendly education systems (Hernandez, 2020).
+User Adoption and Change Management in University Digital Systems
+A University of Zambia Institute of Distance Education study explored the determinants of student and lecturer acceptance of a Digital Management Information System in e-learning. The findings showed that Social Influence had the greatest influence on adoption, followed by Performance Expectancy and Effort Expectancy; based on the study, peer and institutional norms and perceived usefulness and perceived ease of use are essential in encouraging users to adapt new learning systems within a university environment (Samuel & Farhana, 2024).
+A 2024 research into digital transformation projects in Malaysian universities examined the impact of organizational culture, leadership, and training on users as determinants of successful adoption. The authors determined that change resistance is still among the largest obstacles to digital transformation success. Yet universities that adhered to formal change management practices; like stakeholder engagement, digital literacy training, and reward systems for innovative ideas, recorded considerably higher adoption and satisfaction rates among their users. The research underscores the fact that electronic projects need to transcend the deployment of technology and target nurturing readiness and good attitudes among administrative and academic users (Abdul Rahman, Yusuf, & Khalid, 2024).
+A 2024 research in Indonesian campuses examined students who went through e-learning during the pandemic and then switched to a blended model. Based on utilizing the DeLone & McLean IS Success Model alongside the Expectation-Confirmation Model, findings from the study demonstrated that satisfaction and flow (the degree to which users are involved and engaged) are significant predictors of continued use; perceived usefulness drives satisfaction, and system information quality, content, and system reliability have profound impacts on ongoing adoption in a mixed context (Lestaria & Riatun, 2024).
+A multi-country research investigated &quot;eLearning acceptance and adoption challenges&quot; in higher education and recognized typical obstructions: poor infrastructure, poor digital skills of faculty/students, change resistance, quality problems (both technology and content), and poor support/training. The authors contend that resolution of these problems is not only a matter of technical solution but also high-quality change management, stakeholder engagement, and ongoing improvement to establish trust and competency among users (Ahmad, Mohd Noor, Alwan, Gulzar, Khan, & Reegu, 2023).
+In a Spanish higher education institution case study, research identified internal stakeholders as seeing participative leadership, transparent communication, and developing an innovative culture as critical to digital transformation success. The study highlights that in addition to implementing new technology, universities need to manage change proactively by linking policies, educating personnel, involving stakeholders, and verifying that the technology addresses actual user needs; doing so minimizes resistance and boosts adoption (Díaz-Garcia, Montero-Navarro, Rodríguez-Sánchez, & Gallego-Losada, 2023).
+Research Gaps
+The research gap addressed by this study is the critical lack of a specialized Project Proposal Automation System (ProPAS) specifically tailored for student organizations at Northwestern University. Despite a global shift toward digitalization in higher education, the university’s current workflow for student activities remains manually driven and inefficient. A primary deficiency in the current infrastructure is that while Northwestern University employs a Document Tracking System (DTS), this system is designed to track hardcopy documents and explicitly excludes student organizations, leaving them without a dedicated digital tool for their specific administrative needs.
+Consequently, student leaders face a heavy administrative burden characterized by a &quot;back-and-forth&quot; process where every revision requires reprinting documents and physically visiting multiple offices for in-person reviews. While recent literature acknowledges the value of web-based Project Management Systems (PMS), there is a distinct absence of automation designed to handle the specific formatting and submission requirements of Northwestern University's student proposal process.
+To bridge this gap, the study proposes the development of ProPAS, a web-based campus organization document system designed to automate the flow of documents between student leaders and office administrators. 
+Research Framework
+Theoretical Underpinning
+	This study will use the ISO 9126 software quality model, to comprehensively evaluate the system quality. ISO 9126 defines software quality through six main characteristics that collectively determine whether a software system will meet user expectations and organizational components: functionality, reliability, efficiency, portability, maintainability, and usability. For the purposes of evaluating ProPAS, this study will focus on three characteristics most relevant to user acceptance and system performance: functionality, reliability, and usability. 
+	Functionality testing is to confirm that the system successfully executes the specific tasks and meets the requirements it was developed for, aligning with the evaluation components defined by the ISO 9126 framework. In ProPAS, functionality will be tested on how well the system will work on its intended functions; generating unified proposals, submission, tracking, and approvals/ feedback. The system must provide appropriate functions that will streamline the automation to improve organizations and offices processing of project proposals.
+	Testing the reliability of the system is to measure the stability and consistency of ProPAS. To test how ProPAS will remain available and consistent when student organizations process their proposals. A reliable system ensures that document data is not compromised, that monitoring and notifications are on time, and that every record is saved on a history without unexpected failures.
+	Usability testing for ProPAS focuses on evaluating the system's &quot;effort expectancy&quot; by measuring how easy and intuitive it is for end-users to operate. This testing specifically assesses user-friendly processes, such as the ease of generating a project proposal, the simplicity of the submission process, the effectiveness of digital document tracking by student organizations, and the efficiency of approval and feedback mechanisms utilized by university offices.
+To attain the system goal, operationalize the ISO 9126 model’s emphasis on functionality, reliability, and usability, this project will use the waterfall model(Royce, 1970)as shown in figure 1. The waterfall model is a sequential, rigid, and linear process where each phase must be completed before the next one begins, like how waterfall works. In this model, the tasks are divided into sequential parts to deliver specific features for a release.
+This model is appropriate for ProPAS because it allows objective, measurable standards for evaluating software systems. Student leaders are already familiar with basic technologies, and ProPAS does not require expensive expertise with technology, making functionality, reliability, and usability the most relevant evaluation factors.
+Figure 1.
+Waterfall Methodology (Royce, 1970)-19048193300
+
+Requirement
+Design
+Development
+Testing
+Deployment
+Maintenance
+-19048193300
+Requirement. In this phase, the researchers will collect data. It involves determining the needs and requirements of the system, including the current problems encountered by student leaders and office heads with manual processing of project proposals.
+Design. In this phase, the researchers will start to design, outlining the user interface, system components, overall architecture, database structure, and data flow that will work best with the project proposals platform. 
+Development. Programming will begin in this phase, a linear, sequential project management approach where progress flows steadily downwards through distinct phases.
+Testing. The software will be tested as a whole to ensure it meets the requirements and is free from defects or bugs. This involves evaluating the usability, functionality, and reliability of the system through user testing and expert validation.
+Deployment. Once the software has been tested and approved, it is deployed to the production environment. 
+Maintenance. In this final phase, the continuous improvement and maintenance of the system is ensured. This maintenance is to keep the system working and up to date.
+This structured progression supports ISO 9126 by ensuring that system requirements are carefully followed and implemented into features that are functional, reliable, and usable.
+Research Paradigm
+Figure 2.
+Input Process Output Model
+
+The research paradigm for ProPAS follows the Input–Process–Output (IPO) model, outlining the structured progression from problem identification to system development and validated output. Throughout each phase, ISO 9126 software quality characteristics are systematically integrated to ensure that the resulting system meets established standards of functionality, reliability, usability, efficiency, maintainability, and portability. 
+The input identifies the needs and requirements in Northwestern University’s project proposal manual processing and establishes the needs that ProPAS must address. The manual tracking process creates inefficiencies in processing, slow progress rates for approval of proposals, wasted paper, and lack of systematic feedback mechanisms. To address these gaps, the system requires automated project proposal tracking, generator, feedback and approval features. This phase establishes three ISO 9126 quality characteristics that will guide the development: functionality (the system must perform its tasks including project proposal creation, submission, and tracking), reliability (the system must maintain consistent performance during events without failure), and usability (the system must provide a simple and neat interface requiring minimal user training). 
+The process utilizes the Waterfall model, which provides a structured, sequential approach with well-defined goals and documentation requirements. Analysis of needs and requirements begins after gathering data from student leaders and office heads, designing features of the system to align the requirements into technical solutions of project proposal workflow that will follow the ISO 9206 standards, development and testing to build and test the system to ensure that all functions work properly, operates efficiently, and user-friendly. Deployment and Maintainability, release the system to students and offices to ensure ongoing maintenance and user support to ensure sustained quality and reliability.
+The output Project Proposal Automation System represents the outcome of this study, having been developed and tested with the ISO 9126 quality standards. The system will be validated through evaluation involving two respondent groups: student organization leaders who use the system for project proposals ,and office heads who use the system to review and approve the proposals. Subject with evaluation through user surveys assessing satisfaction with functionality, reliability, and usability.
+Research Objectives
+	This study aims to develop a university organization project proposal automation system named “ProPAS: A Project Proposal Automation System for Northwestern University Student Organizations .”  To address the existing manual and inefficient  management of project proposals in the university.
+Specifically, it aims to attain the following objectives:
+Problem analysis; to identify the problems of the current processing of project proposals.
+To analyze the requirements for the development of the system
+To plan and design the overall architecture, database structure, data flow, and user interface of the system.
+To develop the system using a web-based platform with python programming language, framework, and development tools.
+To evaluate the acceptability of the system through user testing and expert validation in terms of:
+4.1 end-users
+	4.1.1 functionality;
+4.1.2 usability; and
+4.1.3 reliability
+4.2 IT experts
+	4.2.1 functionality;
+4.2.2 usability and;
+4.2.3 reliability
+Methods
+Research Design
+The Design and Development Research Design, which emphasizes the methodical planning, development, and assessment of an inventive artifact; such as a model, system, or application, that tackles a recognized issue, will be used in this study. This design, which is based on the framework of Hevner et al. (2004) and Peffers et al. (2007), stresses a sequential, linear software development process in which every stage must be finished to guarantee that the final output is both theoretically sound and functional. The design and development research design is used in this study to direct the requirements formulation, the technical and conceptual design, the implementation of the suggested system or application, and its assessment using accepted software quality standards like reliability, usability, and functionality. By using this method, the research not only yields a functional technological answer but also offers design concepts and insights that help to develop similar computing systems.
+Participants
+The participants of the developed ProPAS system consist of student leaders under College of Arts and Sciences organizations and office heads from Northwestern University. These individuals represent the target population as they routinely deal with the organizational processing of projects and stand to benefit from a digital project proposal system.
+The student respondent group will be composed of 30 student leaders, derived from the five major positions; President, Vice President, Treasurer, Secretary, and Auditor; across all six CAS organizations: CASSO, ICONS, KWAGO, PSYCHSOC, ACES, and HIBE.
+The office heads respondent group will be composed of 4 administrators, with 1 representative per office from the key departments involved in the approval workflow: the College of Arts & Sciences Dean, Office of Student Affairs (OSA), Vice President for Academic Affairs (VPAA), and the Finance Office.
+Purposive sampling will be used to select these participants, who will be chosen specifically based on their familiarity with organizational processes of project proposals and their willingness to evaluate the developed system
+IT Experts will evaluate system acceptability, consisting of experts from CICT and members of the Computer Science Faculty. The experts will evaluate the system based on criteria defined by the ISO 9126 model, specifically assessing functionality, usability, and reliability, and also focusing on Design & Layout. The sample size will be determined based on the number of respondents needed to provide adequate feedback for usability and functionality testing of the system.
+Research Instrument
+The research instrument that will be used in this study will be a structured questionnaire made by the researchers following the Likert scale. This will be designed to gather evaluative responses from users regarding the functionality, usability, and reliability of the developed project proposal automation system. 
+There are two sets of questionnaires: the first part is to determine the needs and requirements; the second part contains evaluation items based on the ISO 9126 software quality model, focusing on criteria such as functionality, reliability, and usability. To ensure the validity of the instrument, the questionnaire will undergo expert validation by faculty members specializing in computer science and information systems, who will review the content for clarity and relevance. 
+The reliability of the instrument will be established through a pilot test, and the internal consistency of the responses will be measured using Cronbach’s Alpha, ensuring that the items consistently measure the intended constructs.
+Data Gathering Procedure
+The data gathering procedure will begin after securing ethical clearance from the Research Ethics Committee. Participants, specifically composed of 30 student leaders and 4 administrators, will be selected based on the sampling criteria, and they will be invited to take part in the evaluation of the developed project proposal automation system. Before participation, each respondent will be provided with an informed consent form explaining the purpose of the study, the methods used, and their voluntarily participating involvement, including the freedom to leave at any time without incurring penalties,. Only those who give their consent will be allowed to proceed with the evaluation.
+The participants will then be given access to the developed system and will be asked to explore its features and functionalities. After the testing session, they will answer a structured questionnaire assessing the system’s functionality, usability, and reliability. The accomplished questionnaires will be collected and checked for completeness, and all gathered data will be treated with strict confidentiality and will be used solely for academic and research purposes.
+
+Data Analysis
+The data analysis for ProPAS will be in two distinct phases: the analysis of user requirements and the analysis of system evaluation. In the preliminary, the primary objective is to identify user requirements necessary for the system’s development. Survey responses collected from students and school administrators will be analyzed using weighted mean calculations. For interpreting the weighted mean scores related to the importance with these user requirements, the following scale will be applied: 
+
+Point
+Range of Means
+Descriptive Interpretation
+5
+4.21 - 5.00
+Strongly Agree
+4
+3.41 - 4.20
+Slightly Agree
+3
+2.61 - 3.40
+Moderately Agree
+2
+1.81 - 2.60
+Disagree
+1
+1.00 - 1.80
+Strongly Disagree
+The second phase involves the analysis of system evaluation, which aims to evaluate the acceptability and quality of ProPAS. Survey responses collected post-development will measure system acceptability across three specific groups: student leaders, school administrators, and IT experts. The IT experts, including CS faculty members and one programmer from CICT, will assess the system's overall features, functionality, usability, reliability, and technical performance using the following scale:
+Point
+Range of Means
+Descriptive Interpretation
+5
+4.21 - 5.00
+Highly Acceptable
+4
+3.41 - 4.20
+Slightly  Acceptable
+3
+2.61 - 3.40
+Moderately Acceptable
+2
+1.81 - 2.60
+Acceptable
+1
+1.00 - 1.80
+Not Acceptable
+IBM SPSS Amos (version 30) will be utilized to perform Confirmatory Factor Analysis (CFA). This analysis would statistically verify that the survey questions (indicators) correctly measure the latent variables (Functionality, Reliability, and Usability). This ensures that the &quot;Functionality&quot; questions in your instrument truly represent the concept of functionality as defined by the ISO model.
+Ethical Considerations
+This study adhered closely to the moral guidelines established by the Research Ethics Northwestern University committee to guarantee the preservation of participants' rights, confidentiality, and well-being. The institution will provide formal approval prior to data collection, alongside the adviser for the research. The administration of the research instrument will be conducted through a face-to-face survey to ensure data integrity and a controlled testing environment.. An informed consent form will be sent to each participant, outlining the study's objectives, the methods used, and their voluntarily participating involvement, including the freedom to leave at any time without incurring penalties. 
+To further ensure the protection of participants, the study aligns with the Data Privacy Act of 2012 (RA 10173). This Philippine law protects personal information in government and private sectors by regulating its processing. It establishes the National Privacy Commission (NPC) to enforce rules on data privacy, ensures transparency in processing, and outlines the rights of individuals regarding their data. The law aims to safeguard the right to privacy while promoting the free flow of information, and it imposes penalties for non-compliance.
+In compliance with these standards, no sensitive or private data will be collected in excess of what is required to assess the developed project proposal automation system. Responses will remain anonymous and confidential, and all information gathered will only be utilized for scholarly and research endeavors. Following the conclusion of the study, the collected data will be appropriately disposed of. The system's testing will be carried out in a controlled setting to protect participants from any danger or discomfort.
+Additionally, the researchers maintain academic integrity by correctly referencing all sources, instruments, and materials employed in the system's creation, thereby abiding by the moral standards of integrity, openness, and observance of intellectual property. The researchers state that this study's conduct is without conflicts of interest, guaranteeing that all results and the conclusions are given impartially and objectively.
+
+
+Results
+Table 1
+Problem Analysis of the Current Project Proposal Processing System
+Indicators
+M
+VI
+Usability
+
+
+The system should be easy to navigate even for first-time users.
+4.63
+SA
+The interface should be visually clear and user-friendly.
+4.50
+SA
+Instructions and labels in the system should be easy to understand.
+4.50
+SA
+Composite Mean
+4.54
+SA
+Functionality
+
+
+The system should allow users to generate proposals using structured templates that follow university formats.
+4.57
+SA
+The system should provide guidelines for completing necessary proposal details.
+4.53
+SA
+The system should allow users to upload supporting documents.
+4.40
+SA
+The system should allow users to review and edit proposals before submission.
+4.47
+SA
+The system should provide a confirmation message after submission.
+4.63
+SA
+The system should automatically route proposals to the appropriate reviewer.
+4.67
+SA
+The system should notify users when the status of their proposal changes (e.g., pending, approved, revised, rejected).
+4.57
+SA
+The system should provide a timeline or history of proposal actions.
+4.67
+SA
+Composite Mean
+4.56
+SA
+     C. Reliability
+
+
+The system should require secure login for all users.
+4.57
+SA
+User data and submitted documents should be securely stored, preventing data loss.
+4.47
+SA
+The system should work properly across different devices and browsers.
+4.40
+SA
+The system should be accessible at all times with minimal downtime.
+4.53
+SA
+Composite Mean
+4.49
+SA
+Overall Mean
+4.53
+SA
+Note: 4.21 – 5.00 = Strongly Agree (SA) 3.41 – 4.20=Agree (A); 2.61 – 3.40=Moderately Agree (MA); 1.81 – 2.60=Disagree (D); 1:00 – 1.80=Strongly Disagree (SD)
+		
+Table 1 presents the problem analysis of the current project proposal processing system in terms of usability, functionality, and reliability.
+In terms of usability, respondents strongly agreed that the system should be easy to navigate even for first-time users (M = 4.63), indicating the importance of intuitive design. The interface being visually clear and user-friendly (M = 4.50) and the presence of easy-to-understand instructions and labels (M = 4.50) were also rated strongly agree, showing that clarity and simplicity are essential for effective system use. These findings suggest that users prioritize a system that minimizes confusion and enhances ease of interaction. The composite mean of 4.54, interpreted as strongly agree, confirms that usability is a critical concern among respondents.
+With regard to functionality, respondents strongly agreed on the need for structured templates that follow university formats (M = 4.57) and the provision of clear guidelines for completing proposal details (M = 4.53), indicating the importance of standardization in proposal creation. The ability to upload supporting documents (M = 4.40) and review and edit proposals before submission (M = 4.47) also received strong agreement, highlighting the need for flexibility and accuracy in the process. Furthermore, receiving confirmation messages after submission (M = 4.63), automatic routing of proposals to appropriate reviewers (M = 4.67), and providing a timeline or history of proposal actions (M = 4.67) were highly rated, emphasizing efficiency, transparency, and proper tracking. Notification of proposal status changes (M = 4.57) further reflects the importance of timely communication. The composite mean of 4.56, interpreted as strongly agree, indicates that functionality is the most emphasized dimension among the respondents.
+In terms of reliability, respondents strongly agreed on the importance of requiring secure login for all users (M = 4.57), ensuring that user data and submitted documents are securely stored (M = 4.47), and maintaining system accessibility with minimal downtime (M = 4.53). The system’s ability to function across different devices and browsers (M = 4.40) also received strong agreement, suggesting that compatibility is still a significant consideration. These findings indicate that users value a system that is secure, stable, and consistently accessible. The composite mean of 4.49, interpreted as strongly agree, confirms that reliability is also a key requirement of the system.
+Overall, the system obtained a mean score of 4.53, interpreted as strongly agree, indicating that respondents highly recognize the need for improvements in the current project proposal processing system. This suggests that enhancements across usability, functionality, and reliability are essential to achieve a more efficient, user-friendly, and dependable system.
+
+
+
+
+
+
+
+
+Bibliography
+Abdul Rahman, N., Yusuf, M., & Khalid, A. (2024). Change Management Strategies and User Adoption in Digital University Transformation: Evidence from Malaysian Higher Education Institutions. Journal of Educational Technology & Society, 27(2), 143–159. https://doi.org/10.2307/jeits.2024.27.2.143
+
+Adedapo, O. A., Bello, J., Ogunrinde, M. A., Oyediran, M. O., Adio, M. O., & Oyekola, O. A. (2023). Development of a Workflow Management System for Higher Education: Case study of the Department of Mathematical and Computer Sciences, Fountain University, Osogbo. FUOYE Journal of Engineering and Technology, 8(4), 456-462. https://doi.org/10.46792/fuoyejet.v8i4.1126
+
+Ahmad, S., Mohd Noor, A. S., Alwan, A. A., Gulzar, Y., Khan, W. Z., & Reegu, F. A. (2023). eLearning Acceptance and Adoption Challenges in Higher Education. Sustainability, 15(7), 6190. https://doi.org/10.3390/su15076190
+
+Alt, Rainer & Auth, Gunnar. (2010). Campus Management System. Business & Information Systems Engineering. 2. 187-190. 10.1007/s12599-010-0105-9. 
+
+Aldoseri, A., Al-Khalifa, K., & Hamouda, A. (2023). A roadmap for integrating automation with process optimization for AI-powered digital transformation. Preprints, 2023101055. https://doi.org/10.20944/preprints202310.1055.v1.
+
+Amir, A., Afnita, A., Zuve, F. O., & Erlianti, G. (2024). Education and Application of Digital Media in Creation and Documentation Artery Based Service Letter. JERIT: Journal of Educational Research and Innovation Technology, 1(1), 36–42. https://jerit.unimika.ac.id/index.php/jerit/article/view/5
+
+Arowolo, O. A., Olayinka, S. O., & Akinola, S. O. (2024). Student Project Management System for Monitoring Undergraduate Projects (Case Study of Computer Science Department, University of Ibadan). Journal of Behavioural Informatics, Digital Humanities and Development Research, 10(3), 47-56. https://doi.org/10.22624/AIMS/BHI/V10N3P3
+
+Ayodeji, A. O., & Olubiyi, M. O. (2020). Design and implementation of a workflow management system for universities. International Journal of Engineering Research & Technology, 9(7), 253- 259.Ayodeji, A. O., & Olubiyi, M. O. (2020). Design and implementation of a workflow management system for universities. International Journal of Engineering Research & Technology, 9(7), 253- 259.
+Banuelos, M. (2023, May 15). Experiences of Higher Education Institution (HEI) Employees Towards Automation of Work, and Work Processes. srrn. https://ssrn.com/abstract=4483974
+
+Capulong, M. M., De Guia, M. A., Dela Cruz, R. C., & Umali, J. B. (2024). Enhancing university operations: A study of the electronic document management systems (EDMS) of one higher education institution. Twist: Journal of Computer Science and Information Technology, 3(2), 112–123. Retrieved from https://twistjournal.net/twist/article/view/337/273
+
+Caroro, R. A., & Hernandez, A. A. (2018). Migrating office processes to automation: An evaluation on green IT practices in a university in the Philippines. In 2018 IEEE 10th International Conference on Humanoid, Nanotechnology, Information Technology, Communication and Control, Environment and Management (HNICEM) (pp. 1-9). IEEE. https://ieeexplore.ieee.org/document/8666418
+
+Chmiel, W., Derkacz, J., Jędrusik, S., et al. (2022). Workflow management system with smart procedures. Multimedia Tools and Applications, 81, 9505–9526. https://doi.org/10.1007/s11042-021-11658-6
+
+Díaz-Garcia, V., Montero-Navarro, A., Rodríguez-Sánchez, J.-L., & Gallego-Losada, R. (2023). Managing Digital Transformation: A Case Study in a Higher Education Institution. Electronics, 12(11), 2522. https://doi.org/10.3390/electronics12112522
+
+Elagroudy, S., Elbardisy, M., Hassan, A., Saoud, I., & El-Meteini, M. (2023). Implementing the 3R’s for a Green Campus: The Ain Shams University Experience. Ain Shams Engineering Journal, 14(2), 200–212. https://doi.org/10.1016/j.asej.2023.101701
+
+García-Hernández, J., García-Valcárcel Muñoz-Repiso, A., Casillas-Martín, S., & Cabezas-González, M. (2023). Innovative Proposals in Digital Education and Sustainability: A Systematic Review. Education Sciences, 13(4), 426. https://doi.org/10.3390/educsci13040426
+
+Gonugunta, K. C., & Leo, K. (2024). ERP systems in higher education institutions: Adoption, challenges, and future trends. The Metascience, 2(2), 86–94. Retrieved from https://yuktabpublisher.com/index.php/TMS/article/view/219
+
+Grafova, T. O., Mishchenko, O. A., Mietova, A. N., & Feygel, M. L. (2021, March 8). The Implementation Of Digitization In The Human Resources And Document Management. European Proceedings. https://www.europeanproceedings.com/article/10.15405/epsbs.2021.03.2
+
+Grepon, B., Baran, N., Gumonan, K., Martinez, A., & Lacsa, M. (2022). Designing and implementing e-schools system: An information systems approach to school management of a community college in northern Mindanao, Philippines. International Journal of Computing Sciences Research, 6, 792-808. https://doi:10.25147/ijcsr.2017.001.1.74
+
+Hassan, H., Ibrahem, A. and Abdul, A. (2022). e-School System Development based on Different Cross-Platform (Doctoral dissertation) University of Sulaimani, Sulaymaniyah, Sulaymaniyah Governorate, Iraq
+https://sjes.univsul.edu.iq/article?id=164
+
+Hernandez, M. (2020). Green IT Adoption Practices in the Education Sector: A Developing Country Perspective. International Journal of Green Computing, 11(2), 45–58. https://doi.org/10.4018/IJGC.2020070104
+
+Hevner, Alan & R, Alan & March, Salvatore & T, Salvatore & Park, & Park, Jinsoo & Ram, & Sudha,. (2004). Design Science in Information Systems Research. Management Information Systems Quarterly. 28. 75-. https://www.researchgate.net/publication/201168946_Design_Science_in_Information_Systems_Research
+
+IBM SPSS Amos. (n.d.). https://www.ibm.com/products/structural-equation-modeling-sem
+
+Kim, J., Kim, Y., Oh, S., Kim, T., & Lee, D. (2021). Estimation of environmental impact of paperless office based on simple model scenarios. International Journal of Sustainable Building Technology and Urban Development, 12(1), 44-60. Retrieved from: https://www.sbt-durabi.org/articles/article/o4Jj/
+
+Lect, Asst & Arafat, Nasser & Jassim, & Areej, Kareem & Rahman, & al-yousuf, Arafat. (2021). Digital transformation at higher education institutions for the academic year (2020- 2021): Departments of College of Administration and Economics, University of Basrah as a model. 5152-5161.
+
+Lestaria, E. D., & Riatun, R. (2024). Unveiling key factors for the continuation of E-learning adoption in blended learning environments within Indonesian higher education during the era of the ‘new normal’. Cogent Education, 11(1), Article 2428871. https://doi.org/10.1080/2331186X.2024.2428871
+
+Li, J., & Zhang, Y. (2023). Research on Accurate Management of College Student Organizations Based on ICT Technology. In Proceedings of the 2023 International Conference on Educational Innovation and Multimedia Technology (EIMT 2023) (pp. 112–118). ACM. https://doi.org/10.1145/3644523.3644683
+
+Lounas, R., Hamzaoui, I., Bouguelmouna, N., & Mokrani, H. (2023). An E-Collaboration Application for Final-Year Project Management. International Journal of e-Collaboration, 19(1). https://doi.org/10.4018/IJeC.315787
+
+Ng, K. K., Chen, C. H., Lee, C. K., Jiao, J. R., & Yang, Z. X. (2021). A systematic literature review on intelligent automation: Aligning concepts from theory, practice, and future perspectives. Advanced Engineering Informatics, 47, 101246. https://doi.org/10.1016/j.aei.2021.101246.
+
+Ogundipe, M. O., Anise, T. O., Adelana, R. A., & Adeniji, F. O. (2023). Management Information System and University Administration: The Case of Government-Owned Universities in Ogun State, Nigeria. Malaysian Research Journal, 9(2), 44–56. https://ejournal.upsi.edu.my/index.php/MRJ/article/view/7667
+
+Orhani, S., Drini, L., Saramati, E., Morina, M., & Kolukaj, M. (2025). Automation of Administrative Processes as a Strategy for Reducing Bureaucracy in Schools. American Journal of Humanities and Social Sciences Research, 09(09), 49-59. https://www.ajhssr.com/wp-content/uploads/2025/09/G259094959.pdf
+
+Peffers, Ken & Tuunanen, Tuure & Rothenberger, Marcus & Chatterjee, S.. (2007). A design science research methodology for information systems research. Journal of Management Information Systems. 24. 45-77. https://www.researchgate.net/publication/284503626_A_design_science_research_methodology_for_information_systems_research
+
+Purcia, J. B., & Velarde, C. F. (2022). Student Registration and Records Management Services of the Three Private Universities in the Philippines: Basis for Academic Records Digitization. American Journal of Multidisciplinary Research and Innovation, 1(4), 79–87. https://journals.e-palli.com/home/index.php/ajmri/article/view/447
+
+Samuel, T., & Farhana, N. (2024). User Acceptance and Adoption of the Digital Management Information System by focusing on E-Learning System in Institute of Distance Education (IDE) at the University of Zambia (UNZA). British Journal of Multidisciplinary and Advanced Studies: Engineering and Technology, 5(1), 42–58. https://doi.org/10.37745/bjmas.2022.0435
+
+
+Soms, Nisha & .S, Prashanth & Preethika, P & Kumar, Deepak. (2021). Student Project Management System.
+
+Shi, S., & Qin, L. (2023). Research on Information Construction of University Management System App Based on Cognitive Model. In Proceedings of the 2023 3rd International Conference on Applied Computing and Information Technology (ACIT 2023) (pp. 255–262). EWA Direct. https://www.ewadirect.com/proceedings/ace/article/view/4762
+
+Tatlı, M., Bıyıkbeyi, M., Gençer Çelik, D., & Öngel, A. (2024). Determinants of Paperless Technology Adoption in Higher Education Institutions: A UTAUT Model Approach. Sustainability, 16(1), 332. https://doi.org/10.3390/su16010332
+
+University of Sharjah. (2022). Towards a Paperless University: Sustainability and Digital Transformation Report. University of Sharjah Press. Retrieved from: https://ieeexplore.ieee.org/document/9734887
+
+Xie, L. (2025). Research on Innovation of Management System for College Student Associations: A Case Study of Guizhou Business University. Journal of Social Science, Humanities and Literature, 5(1), 32–40. https://www.adwenpub.com/index.php/jsshl/article/view/535
+
+Zamfiroiu, A., & Vasile, D. (2024). Automation of student evaluation process through online educational platforms. Procedia Computer Science, 242, 412-419. https://doi.org/10.1016/j.procs.2024.08.167
+
+Appendices
+Appendix A
+Preliminary Survey Questionnaire
+Students Survey
+	A. Usability 
+	Rating Scale:
+ 5 = Strongly Agree, 4 = Agree, 3 = Moderately Agree, 
+ 2 = Disagree   1 = Strongly Disagree
+Statements
+5
+4
+3
+2
+1
+The system should be easy to navigate even for first-time users.
+
+
+
+
+
+The interface should be visually clear and user-friendly.
+
+
+
+
+
+Instructions and labels in the system should be easy to understand.
+
+
+
+
+
+	B. Functionality 
+Statements
+5
+4
+3
+2
+1
+The system should allow users to generate proposals using structured templates that follow university formats.
+
+
+
+
+
+The system should provide guidelines for completing necessary proposal details.
+
+
+
+
+
+The system should allow users to upload supporting documents.
+
+
+
+
+
+The system should allow users to review and edit proposals before submission.
+
+
+
+
+
+The system should provide a confirmation message after submission.
+
+
+
+
+
+The system should automatically route proposals to the appropriate reviewer.
+
+
+
+
+
+The system should notify users when the status of their proposal changes (e.g., pending, approved, revised, rejected).
+
+
+
+
+
+The system should provide a timeline or history of proposal actions.
+
+
+
+
+
+C. Reliability
+Statements
+5
+4
+3
+2
+1
+The system should require secure login for all users.
+
+
+
+
+
+User data and submitted documents should be securely stored, preventing data loss.
+
+
+
+
+
+The system should work properly across different devices and browsers.
+
+
+
+
+
+The system should be accessible at all times with minimal downtime.
+
+
+
+
+
+Administrators Survey
+A. Usability 
+	Rating Scale:
+ 5 = Strongly Agree, 4 = Agree, 3 = Moderately Agree, 
+ 		 2 = Disagree   1 = Strongly Disagree
+
+Statements
+5
+4
+3
+2
+1
+The system should be easy to navigate when reviewing proposals.
+
+
+
+
+
+Proposal details should be clearly presented for review.
+
+
+
+
+
+Submitting feedback or approvals should be simple.
+
+
+
+
+
+B. Functionality.
+Statements
+5
+4
+3
+2
+1
+The system should automatically route proposals to the appropriate reviewer based on predefined rules.
+
+
+
+
+
+The system should notify approvers when a proposal is submitted for their review.
+
+
+
+
+
+Approvers should be able to review proposals and attachments directly within the system.
+
+
+
+
+
+The system should allow approvers to approve, reject, or request revisions digitally.
+
+
+
+
+
+The system should allow approvers to add formal comments or feedback for the student organization.
+
+
+
+
+
+
+C. Reliability.
+Statements
+5
+4
+3
+2
+1
+Only authorized personnel should access or modify proposal records.
+
+
+
+
+
+The system should minimize errors and inconsistencies in proposals by enforcing data requirements.
+
+
+
+
+
+The system should load pages and perform tasks quickly.
+
+
+
+
+
+
+Appendix B
+Evaluation Questionnaire
+Students Survey
+A. Functionality.
+	Rating Scale:
+ 		5 = Highly Acceptable, 4 = Acceptable, 3 = Moderately Acceptable, 
+ 	 	2 = Slightly Acceptable  1 = Not Acceptable
+Statements
+5
+4
+3
+2
+1
+Proposal Generation: The system allows users to generate proposals using structured templates that follow university formats
+
+
+
+
+
+Guidelines: The system provides clear guidelines for completing necessary proposal details.
+
+
+
+
+
+Document Upload: The system allows users to upload supporting documents
+
+
+
+
+
+Review and Edit: The system allows users to review and edit proposals effectively before submission
+
+
+
+
+
+Confirmation: The system provides a confirmation message immediately after submission
+
+
+
+
+
+Automatic Routing: The system automatically routes proposals to the appropriate reviewer
+
+
+
+
+
+Notifications: The system notifies users when the status of their proposal changes (e.g., pending, approved, revised, rejected).
+
+
+
+
+
+History/Tracking: The system provides a timeline or history of proposal actions
+
+
+
+
+
+B. Usability 
+Statements
+5
+4
+3
+2
+1
+Navigation: The system is easy to navigate, even for first-time users
+
+
+
+
+
+Interface Clarity: The interface is visually clear and user-friendly
+
+
+
+
+
+Clarity of Instructions: Instructions and labels in the system are easy to understand
+
+
+
+
+
+Submission Process: The submission process is simple and straightforward
+
+
+
+
+
+C. Reliability 
+Statements
+5
+4
+3
+2
+1
+Security: The system requires secure login for all users.
+
+
+
+
+
+Data Integrity: User data and submitted documents are securely stored, preventing data loss
+
+
+
+
+
+Consistency: The system works properly across different devices and browsers
+
+
+
+
+
+.Availability: The system is accessible at all times with minimal downtime
+
+
+
+
+
+Administrators Survey
+A. Functionality.
+	Rating Scale:
+ 		5 = Highly Acceptable, 4 = Acceptable, 3 = Moderately Acceptable, 
+ 	 	2 = Slightly Acceptable  1 = Not Acceptable
+
+
+Statements
+5
+4
+3
+2
+1
+Automatic Routing: The system automatically routes proposals to the appropriate reviewer based on predefined rules.
+
+
+
+
+
+Notification: The system notifies approvers when a proposal is submitted for their review.
+
+
+
+
+
+Direct Review: Approvers are able to review proposals and attachments directly within the system.
+
+
+
+
+
+Digital Actions: The system allows approvers to approve, reject, or request revisions digitally.
+
+
+
+
+
+Feedback Mechanism: The system allows approvers to add formal comments or feedback for the student organization
+
+
+
+
+
+B. Usability 
+Statements
+5
+4
+3
+2
+1
+Navigation: The system is easy to navigate, even for first-time users
+
+
+
+
+
+Clarity of Presentation: Proposal details are clearly presented for review
+
+
+
+
+
+Action Simplicity: The process of submitting feedback or approvals is simple.
+
+
+
+
+
+C. Reliability 
+Statements
+5
+4
+3
+2
+1
+Security: The system requires secure login for all users.
+
+
+
+
+
+Error Minimization: The system minimizes errors and inconsistencies in proposals by enforcing data requirements.
+
+
+
+
+
+Consistency: The system works properly across different devices and browsers
+
+
+
+
+
+Performance Speed: The system loads pages and performs tasks quickly
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Curriculum Vitae4152900361950
+
+
+RENIER E. CANDIDO
+Complete Address: Brgy 1. San Lorenzo, Laoag City, Ilocos Norte
+Contact Number: 09295944482
+E-mail Address: candidorenier@gmail.com
+ 
+PERSONAL INFORMATION:
+Birthday		: 	September 23, 2004		
+Birthplace		: 	General Trias City		
+Age			: 	21			
+Nationality		: 	Filipino		
+Civil status		: 	Single		
+Father's Name	: 	Rommel D. Candido	
+Mother's Name	: 	Marilou B. Eugenio
+ 
+EDUCATIONAL BACKGROUND:
+TERTIARY:		      	NORTHWESTERN UNIVERSITY
+                                                      	Bachelor of Science in Computer Science
+ 					Airport Road 2900 Laoag City, Philippines
+                                                      	2022 - Present
+ 
+SECONDARY: 		
+Senior High School:        	Kapitolyo High School
+                                                      	Science, Technology, Engineering & Mathematics
+					San Ignacio, St. Bo, Kapitolyo, Pasig City
+                                                      	2020- 2022     	
+      	
+
+Junior High School:       	Kapitolyo High School
+San Ignacio, St. Bo, Kapitolyo, Pasig City
+                                                            2016- 2020
+      	 
+      	
+ 
+ELEMENTARY:            	Pineda Elementary School
+Brgy. Pineda, Pasig City
+                                                            2010- 2016
+      	 
+4111950247650
+                                          	Curriculum Vitae
+
+
+JAN TIMOTHY B. ORPILLA
+Complete Address: Brgy.13, Laoag City, Ilocos Norte
+Contact Number: 09184361005
+E-mail Address: ttimothyorpilla@gmail.com
+ 
+PERSONAL INFORMATION:
+Birthday		: 	May 12, 2004		
+Birthplace		: 	Laoag City		
+Age			: 	21			
+Nationality		: 	Filipino		
+Civil status		: 	Single		
+Father's Name	: 	Manny P. Orpilla
+Mother's Name	: 	Bonnie B. Orpilla
+ 
+EDUCATIONAL BACKGROUND:
+TERTIARY:		      	NORTHWESTERN UNIVERSITY
+                                                      	Bachelor of Science in Computer Science
+ 					Airport Road 2900 Laoag City, Philippines
+                                                      	2022 - Present
+ 
+SECONDARY: 		
+Senior High School:        	DIVINE WORD COLLEGE OF LAOAG
+Science, Technology, Engineering, & Mathematics
+Magat Salamat Street, Laoag City, Philippines
+2021 - 2022   	
+      	
+
+Junior High School:       	DIVINE WORD COLLEGE OF LAOAG
+Magat Salamat Street, Laoag City, Philippines
+2016 - 2021
+      	
+ 
+ELEMENTARY:            	SAINT SANTIAGO SCHOOL FOUNDATION 
+Brgy. 13, General Segundo Ave. Laoag City
+2010 - 2016
+
+
+                            4240538212408Insert your photo here
+42405382124084197675219075
+                                          Curriculum Vitae
+
+
+PRINCESS KYLA A. LORENZO
+Complete Address: Brgy 15 Utol, Bangui, Ilocos Norte
+Contact Number: 09777541465
+E-mail Address: princesskylalorenzo@gmail.com
+ 
+PERSONAL INFORMATION:
+Birthday		: 	September 19, 2003		
+Birthplace		: 	Bangui	
+Age			: 	22			
+Nationality		: 	Filipino		
+Civil status		: 	Single		
+Father's Name	: 	Nestor C. Lorenzo Jr.
+Mother's Name	: 	Gina A. Lorenzo
+ 
+EDUCATIONAL BACKGROUND:
+TERTIARY:		      	NORTHWESTERN UNIVERSITY
+                                                      	Bachelor of Science in Computer Science
+ 					Airport Road 2900 Laoag City, Philippines
+                                                      	2022 - Present
+ 
+SECONDARY: 		
+Senior High School:        	Banban National High School
+General Academic Strand
+Banban, Bangui Ilocos Norte
+2019-2021
+      	
+
+Junior High School:       	Banban National High School
+Banban, Bangui Ilocos Norte
+2015-2019
+      	 
+      	
+ 
+ELEMENTARY:            	Baruyen Elementary School
+Baruyen, Bangui Ilocos Norte
+2009-2015

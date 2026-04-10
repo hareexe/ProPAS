@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog
+from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog, Notification
 
 # Define the Blueprint - Only for Organization/Student tasks
 proposal_bp = Blueprint('proposal', __name__)
@@ -151,13 +151,17 @@ def org_home():
     pending = Proposal.query.filter_by(creator_id=current_user.id, status='PENDING').count()
     rejected = Proposal.query.filter_by(creator_id=current_user.id, status='REJECTED').count()
     approved = Proposal.query.filter_by(creator_id=current_user.id, status='APPROVED').count()
+    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
+    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
     
     return render_template(
         'org_home.html', 
         proposals=proposals, 
         pending_count=pending, 
         rejected_count=rejected, 
-        approved_count=approved
+        approved_count=approved,
+        notifications=notifications,
+        unread_notifications=unread_notifications,
     )
 
 @proposal_bp.route('/create-proposal', methods=['GET', 'POST'])
