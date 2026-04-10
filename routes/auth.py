@@ -12,23 +12,27 @@ OFFICE_DISPLAY_NAMES = {
 def _display_step_name(name):
     return OFFICE_DISPLAY_NAMES.get(name, name)
 
+
+def _home_endpoint_for_user(user):
+    if user.account_type == 'Admin':
+        return 'admin.dashboard'
+    if user.account_type == 'Office':
+        return 'office.review'
+    return 'proposal.org_home'
+
 @auth_bp.route('/', methods=['GET', 'POST'])
 def signin():
     if current_user.is_authenticated:
-        # Update these two strings with blueprint prefixes
-        dest = 'office.review' if current_user.account_type == 'Office' else 'proposal.org_home'
-        return redirect(url_for(dest))
+        return redirect(url_for(_home_endpoint_for_user(current_user)))
 
     if request.method == 'POST':
         user = User.query.filter_by(username=request.form.get('username')).first()
         
         if user and check_password_hash(user.password_hash, request.form.get('password')):
             login_user(user)
-            # Update these two strings here as well
-            dest = 'office.review' if user.account_type == 'Office' else 'proposal.org_home'
-            return redirect(url_for(dest))
+            return redirect(url_for(_home_endpoint_for_user(user)))
         else:
-            flash("Invalid Username or Password", "danger")
+            flash("Invalid Username or Password", "auth-danger")
 
     return render_template('signin.html')
 

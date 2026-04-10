@@ -5,13 +5,13 @@ from sqlalchemy.ext.mutable import MutableDict
 
 db = SQLAlchemy()
 
-# ---------------- ACCOUNTS (Org + Office) ----------------
+# ---------------- ACCOUNTS (Org + Office + Admin) ----------------
 class User(UserMixin, db.Model):
     __tablename__ = 'accounts'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    account_type = db.Column(db.String(20))  # 'Org' or 'Office'
+    password_hash = db.Column(db.String(256))
+    account_type = db.Column(db.String(20))  # 'Org', 'Office', or 'Admin'
     
     # JSON for flexible profile info (contact, department, etc.)
     profile_data = db.Column(MutableDict.as_mutable(db.JSON), default=dict) 

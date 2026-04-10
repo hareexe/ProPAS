@@ -19,6 +19,18 @@
     </div>
 
     <h2>Sign In</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true, category_filter=['auth-danger']) %}
+        {% if messages %}
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+            {% for category, message in messages %}
+            <div style="padding:12px 14px; border-radius:14px; font-size:14px; border:1px solid #fecaca; background:#fef2f2; color:#b91c1c;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
     
     <form method="POST" action="{{ url_for('auth.signin') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

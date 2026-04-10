@@ -49,22 +49,36 @@
         <div class="section-subtitle">Form sections I – IV of OSA-F05A.</div>
         <div class="field-grid cols-2">
           <div class="field" style="grid-column:1/-1">
-            <label>I. Project Proposal Title <span class="req">*</span></label>
+            <label for="id_title">I. Project Proposal Title <span class="req">*</span></label>
             <input type="text" id="id_title" name="title" required placeholder="Project Title" 
                    value="{{ edit_data.title if edit_data else '' }}">
           </div>
           <div class="field">
-            <label>II. Sponsor / Organization <span class="req">*</span></label>
+            <label for="id_sponsor">II. Sponsor / Organization <span class="req">*</span></label>
             <input type="text" id="id_sponsor" name="sponsor" placeholder="e.g., Student Council" required oninput="updateProgress()" 
                    value="{{ edit_data.proposal_data.get('sponsor', '') if edit_data else '' }}" />
           </div>
           <div class="field">
-            <label>III. Date &amp; Venue</label>
-            <input type="text" id="id_date_venue" name="date_venue" placeholder="e.g., Sept 12, 2025 | University Gym" 
-                   value="{{ edit_data.proposal_data.get('date_venue', '') if edit_data else '' }}" />
+            <label for="id_event_date">III. Event Date</label>
+            <input type="date" id="id_event_date" name="event_date"
+                   value="{{ edit_data.proposal_data.get('event_date', '') if edit_data else '' }}" />
+          </div>
+          <div class="field">
+            <label for="id_venue">III. Venue</label>
+            <select id="id_venue" name="venue" title="Venue" aria-label="Venue" onchange="toggleVenueOther()">
+              <option value="">Select venue</option>
+              {% for venue in venue_options %}
+              <option value="{{ venue }}" {% if edit_data and edit_data.proposal_data.get('venue', '') == venue %}selected{% endif %}>{{ venue }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field" id="venueOtherField" style="grid-column:1/-1; display:none;">
+            <label for="id_venue_other">Specify Other Venue</label>
+            <input type="text" id="id_venue_other" name="venue_other" placeholder="Enter venue name"
+                   value="{{ edit_data.proposal_data.get('venue_other', '') if edit_data else '' }}" />
           </div>
           <div class="field" style="grid-column:1/-1">
-            <label>IV. Target Participants</label>
+            <label for="id_participation">IV. Target Participants</label>
             <input type="text" id="id_participation" name="participation" placeholder="e.g., All 1st Year Engineering Students" 
                    value="{{ edit_data.proposal_data.get('participation', '') if edit_data else '' }}" />
           </div>
@@ -76,12 +90,12 @@
         <div class="section-subtitle">Form sections V and VIII of OSA-F05A.</div>
         <div class="field-grid">
           <div class="field">
-            <label>V. Background / Rationale <span class="req">*</span></label>
+            <label for="id_rationale">V. Background / Rationale <span class="req">*</span></label>
             <textarea id="id_rationale" name="rationale" rows="6" maxlength="2000" oninput="countChars(this,'rationale-count')" placeholder="Describe the background and rationale..." required>{{ edit_data.proposal_data.get('rationale', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="rationale-count">0 / 2000</span></div>
           </div>
           <div class="field">
-            <label>VIII. Approach / Process</label>
+            <label for="id_approach">VIII. Approach / Process</label>
             <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" oninput="countChars(this,'approach-count')" placeholder="Describe the approach or methodology...">{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="approach-count">0 / 2000</span></div>
           </div>
@@ -91,19 +105,27 @@
       <div class="form-section" id="section-2">
         <div class="section-title">Objectives, UNSDGs &amp; Expected Outcomes</div>
         <div class="section-subtitle">Form sections VI, VII, and IX of OSA-F05A.</div>
+        {% set selected_sdg_values = edit_data.proposal_data.get('unsdg_goals', []) if edit_data else [] %}
         <div class="field-grid">
           <div class="field">
-            <label>VI. Objectives <span class="req">*</span></label>
+            <label for="id_objectives">VI. Objectives <span class="req">*</span></label>
             <textarea id="id_objectives" name="objectives_list" rows="5" maxlength="2000" oninput="countChars(this,'obj-count')" placeholder="List each objective on a new line..." required>{{ edit_data.proposal_data.get('objectives_list', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="obj-count">0 / 2000</span></div>
           </div>
           <div class="field">
-            <label>VII. UNSDGs (Sustainable Development Goals) Targets</label>
-            <textarea id="id_unsdg" name="unsdg" rows="3" maxlength="1000" oninput="countChars(this,'unsdg-count')" placeholder="e.g., SDG 4: Quality Education">{{ edit_data.proposal_data.get('unsdg', '') if edit_data else '' }}</textarea>
-            <div class="field-footer"><span class="char-count" id="unsdg-count">0 / 1000</span></div>
+            <label id="id_unsdg_group_label" for="id_unsdg_group">VII. UNSDGs (Sustainable Development Goals) Targets</label>
+            <div class="sdg-grid" id="id_unsdg_group" role="group" aria-labelledby="id_unsdg_group_label">
+              {% for sdg in sdg_options %}
+              <label class="sdg-option">
+                <input type="checkbox" name="unsdg_goals" value="{{ sdg.value }}" {% if sdg.value in selected_sdg_values %}checked{% endif %}>
+                <span>{{ sdg.label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <div class="field-footer"><span class="char-count" id="unsdg-count">0 selected</span></div>
           </div>
           <div class="field">
-            <label>IX. Expected Outcomes</label>
+            <label for="id_outcome">IX. Expected Outcomes</label>
             <textarea id="id_outcome" name="expected_outcome" rows="4" maxlength="2000" oninput="countChars(this,'outcome-count')" placeholder="Describe the expected results...">{{ edit_data.proposal_data.get('expected_outcome', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="outcome-count">0 / 2000</span></div>
           </div>
@@ -142,12 +164,12 @@
 
         <div class="field-grid cols-2">
           <div class="field">
-            <label>X-a. Proposed Budget (₱)</label>
+            <label for="id_budget">X-a. Proposed Budget (₱)</label>
             <input type="number" id="id_budget" name="budget" placeholder="0.00" step="0.01" 
                    value="{{ edit_data.proposal_data.get('budget', 0) if edit_data else 0 }}" />
           </div>
           <div class="field">
-            <label>X-c. Source of Funding</label>
+            <label for="id_funding_source">X-c. Source of Funding</label>
             <input type="text" id="id_funding_source" name="funding_source" placeholder="e.g., Student Org Fund" 
                    value="{{ edit_data.proposal_data.get('funding_source', '') if edit_data else '' }}" />
           </div>
@@ -159,17 +181,17 @@
         <div class="section-subtitle">Authorized signatures required for OSA-F05A submission.</div>
         <div class="sig-grid">
           <div class="sig-card">
-            <div class="sig-role">Org President / Project Coordinator</div>
+            <label class="sig-role" for="id_sig_president">Org President / Project Coordinator</label>
             <input type="text" id="id_sig_president" name="signatory_ProjPresident" placeholder="Full name" 
                    value="{{ edit_data.proposal_data.get('signatory_ProjPresident', '') if edit_data else '' }}" />
           </div>
           <div class="sig-card">
-            <div class="sig-role">Person In-Charge / Adviser</div>
+            <label class="sig-role" for="id_sig_adviser">Person In-Charge / Adviser</label>
             <input type="text" id="id_sig_adviser" name="signatory_adviser" placeholder="Full name" 
                    value="{{ edit_data.proposal_data.get('signatory_adviser', '') if edit_data else '' }}" />
           </div>
           <div class="sig-card">
-            <div class="sig-role">Department / Program Head</div>
+            <label class="sig-role" for="id_sig_dept">Department / Program Head</label>
             <input type="text" id="id_sig_dept" name="signatory_dept_head" placeholder="Full name" 
                    value="{{ edit_data.proposal_data.get('signatory_dept_head', '') if edit_data else '' }}" />
           </div>

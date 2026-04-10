@@ -9,6 +9,43 @@ from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog
 # Define the Blueprint - Only for Organization/Student tasks
 proposal_bp = Blueprint('proposal', __name__)
 
+VENUE_OPTIONS = [
+    'Student Center',
+    'New Media Hall',
+    'Old Media Hall',
+    'Worship Center',
+    'Freedom Park',
+    'International House',
+    'Oval',
+    'Others',
+]
+
+SDG_OPTIONS = [
+    {'value': 'SDG 1: No Poverty', 'label': 'SDG 1: No Poverty'},
+    {'value': 'SDG 2: Zero Hunger', 'label': 'SDG 2: Zero Hunger'},
+    {'value': 'SDG 3: Good Health and Well-Being', 'label': 'SDG 3: Good Health and Well-Being'},
+    {'value': 'SDG 4: Quality Education', 'label': 'SDG 4: Quality Education'},
+    {'value': 'SDG 5: Gender Equality', 'label': 'SDG 5: Gender Equality'},
+    {'value': 'SDG 6: Clean Water and Sanitation', 'label': 'SDG 6: Clean Water and Sanitation'},
+    {'value': 'SDG 8: Decent Work and Economic Growth', 'label': 'SDG 8: Decent Work and Economic Growth'},
+    {'value': 'SDG 9: Industry, Innovation and Infrastructure', 'label': 'SDG 9: Industry, Innovation and Infrastructure'},
+    {'value': 'SDG 10: Reduced Inequalities', 'label': 'SDG 10: Reduced Inequalities'},
+    {'value': 'SDG 11: Sustainable Cities and Communities', 'label': 'SDG 11: Sustainable Cities and Communities'},
+    {'value': 'SDG 13: Climate Action', 'label': 'SDG 13: Climate Action'},
+    {'value': 'SDG 16: Peace, Justice and Strong Institutions', 'label': 'SDG 16: Peace, Justice and Strong Institutions'},
+    {'value': 'SDG 17: Partnerships for the Goals', 'label': 'SDG 17: Partnerships for the Goals'},
+]
+
+
+def _require_org_account():
+    if current_user.account_type == 'Admin':
+        return redirect(url_for('admin.dashboard'))
+    if current_user.account_type == 'Office':
+        return redirect(url_for('office.review'))
+    if current_user.account_type != 'Org':
+        abort(403)
+    return None
+
 def _proposal_prefix(username):
     safe_username = secure_filename(username or "Org").replace("_", "")
     return f"{safe_username}Proposal"
@@ -44,10 +81,70 @@ def _build_proposal_filename(username, sequence, version=None):
         base_name = f"{base_name}_v{version}"
     return f"{base_name}.pdf"
 
+
+def _split_legacy_date_venue(value):
+    if not value:
+        return '', '', ''
+
+    for separator in ('|', ' / ', '/', ' — ', ' – '):
+        if separator in value:
+            event_date, venue = [part.strip() for part in value.split(separator, 1)]
+            break
+    else:
+        return value.strip(), '', ''
+
+    if venue in VENUE_OPTIONS[:-1]:
+        return event_date, venue, ''
+
+    return event_date, 'Others', venue
+
+
+def _normalize_proposal_form_data(form_data):
+    if hasattr(form_data, 'to_dict'):
+        normalized = form_data.to_dict()
+        unsdg_goals = [value.strip() for value in form_data.getlist('unsdg_goals') if value.strip()]
+    else:
+        normalized = dict(form_data or {})
+        raw_unsdg_goals = normalized.get('unsdg_goals', [])
+        if isinstance(raw_unsdg_goals, list):
+            unsdg_goals = [value.strip() for value in raw_unsdg_goals if isinstance(value, str) and value.strip()]
+        elif isinstance(raw_unsdg_goals, str) and raw_unsdg_goals.strip():
+            unsdg_goals = [raw_unsdg_goals.strip()]
+        else:
+            unsdg_goals = []
+
+    event_date = (normalized.get('event_date') or '').strip()
+    venue = (normalized.get('venue') or '').strip()
+    venue_other = (normalized.get('venue_other') or '').strip()
+
+    if not (event_date or venue or venue_other):
+        legacy_date_venue = (normalized.get('date_venue') or '').strip()
+        split_date, split_venue, split_other = _split_legacy_date_venue(legacy_date_venue)
+        normalized['event_date'] = split_date
+        normalized['venue'] = split_venue
+        normalized['venue_other'] = split_other
+    else:
+        normalized['event_date'] = event_date
+        normalized['venue'] = venue
+        normalized['venue_other'] = venue_other if venue == 'Others' else ''
+
+    legacy_unsdg = normalized.get('unsdg')
+    if not unsdg_goals and isinstance(legacy_unsdg, str) and legacy_unsdg.strip():
+        unsdg_goals = [value.strip() for value in legacy_unsdg.splitlines() if value.strip()]
+
+    normalized['unsdg_goals'] = unsdg_goals
+    normalized['unsdg'] = ', '.join(unsdg_goals)
+
+    return normalized
+
 @proposal_bp.route('/org-home')
 @login_required
 def org_home():
     """Main dashboard for Organizations to see a summary of their work."""
+    redirect_response = _require_org_account()
+    if redirect_response:
+        return redirect_response
+
     proposals = Proposal.query.filter_by(creator_id=current_user.id).all()
     
     # Statistics for dashboard cards
@@ -67,11 +164,17 @@ def org_home():
 @login_required
 def create():
     """Handles creating new proposals and editing rejected ones."""
+    redirect_response = _require_org_account()
+    if redirect_response:
+        return redirect_response
+
     edit_id = request.values.get('edit_id')
     proposal_to_edit = None
     
     if edit_id:
         proposal_to_edit = Proposal.query.filter_by(id=edit_id, creator_id=current_user.id).first()
+        if proposal_to_edit and proposal_to_edit.proposal_data:
+            proposal_to_edit.proposal_data = _normalize_proposal_form_data(proposal_to_edit.proposal_data)
 
     if request.method == 'POST':
         try:
@@ -105,7 +208,7 @@ def create():
                 if filename:
                     proposal_to_edit.file_path = filename
                 
-                proposal_to_edit.proposal_data = request.form.to_dict()
+                proposal_to_edit.proposal_data = _normalize_proposal_form_data(request.form)
                 proposal_to_edit.status = 'PENDING'
                 
                 # Reset any rejected steps to pending
@@ -129,7 +232,7 @@ def create():
                 new_prop = Proposal(
                     title=title,
                     file_path=None,
-                    proposal_data=request.form.to_dict(),
+                    proposal_data=_normalize_proposal_form_data(request.form),
                     creator_id=current_user.id,
                     current_step_id=steps[0].id if steps else None,
                     status='PENDING'
@@ -157,12 +260,21 @@ def create():
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
 
-    return render_template('create_proposal.html', edit_data=proposal_to_edit)
+    return render_template(
+        'create_proposal.html',
+        edit_data=proposal_to_edit,
+        venue_options=VENUE_OPTIONS,
+        sdg_options=SDG_OPTIONS
+    )
 
 @proposal_bp.route('/submission-history')
 @login_required
 def history():
     """Private history for the logged-in Organization."""
+    redirect_response = _require_org_account()
+    if redirect_response:
+        return redirect_response
+
     query = Proposal.query.filter_by(creator_id=current_user.id)
 
     search = request.args.get('search')
@@ -184,6 +296,10 @@ def history():
 @login_required
 def resubmit(proposal_id):
     """Specific endpoint for physical PDF uploads if needed separately."""
+    redirect_response = _require_org_account()
+    if redirect_response:
+        return redirect_response
+
     proposal = db.session.get(Proposal, proposal_id)
     if not proposal or proposal.creator_id != current_user.id:
         abort(403)

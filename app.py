@@ -3,9 +3,12 @@ from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
 from models import db, ApprovalStep
+from sqlalchemy.exc import IntegrityError
+from werkzeug.security import generate_password_hash
 
 # Import Blueprints
 from routes.auth import auth_bp
+from routes.admin import admin_bp
 from routes.proposal import proposal_bp
 from routes.office import office_bp
 
@@ -42,6 +45,7 @@ def load_user(user_id):
 
 # Register Blueprints
 app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
 app.register_blueprint(proposal_bp)
 app.register_blueprint(office_bp)
 
@@ -52,10 +56,30 @@ def init_approval_steps():
             db.session.add(ApprovalStep(name=name, step_order=order))
         db.session.commit()
 
+
+def init_admin_account():
+    from models import User
+
+    admin = User.query.filter(User.username.ilike('Admin')).first()
+    if not admin:
+        admin = User(
+            username='Admin',
+            password_hash=generate_password_hash('@Admin2026.'),
+            account_type='Admin',
+            profile_data={}
+        )
+        db.session.add(admin)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+
+
+with app.app_context():
+    db.create_all()
+    init_approval_steps()
+    init_admin_account()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        init_approval_steps()
-    
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

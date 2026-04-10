@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash
 # Define your list
 orgs = ["Icons", "Hibe", "Kwago", "Casso", "Psych", "Aces"]
 offices = ["Osa", "Finance", "Vpaa", "Cas", "VicePresident", "President"]
+admins = ["Admin"]
 
 with app.app_context():
     db.create_all() 
@@ -26,6 +27,16 @@ with app.app_context():
             )
             db.session.add(new_user)
             print(f"Added Office: {name}")
+
+    for name in admins:
+        if not User.query.filter_by(username=name).first():
+            new_user = User(
+                username=name,
+                password_hash=generate_password_hash("@Admin2026."),
+                account_type="Admin"
+            )
+            db.session.add(new_user)
+            print(f"Added Admin: {name}")
             
     db.session.commit()
     print("Database seeded!")

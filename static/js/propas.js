@@ -100,6 +100,14 @@ function countChars(el, id) {
     }
 }
 
+function updateSdgCount() {
+    const counter = document.getElementById('unsdg-count');
+    const selectedCount = document.querySelectorAll('input[name="unsdg_goals"]:checked').length;
+    if (counter) {
+        counter.textContent = `${selectedCount} selected`;
+    }
+}
+
 function updateProgress() {
     const n = ['id_title', 'id_sponsor'].filter(id => {
         const el = document.getElementById(id);
@@ -117,6 +125,49 @@ function updateProgress() {
 const g   = id => (document.getElementById(id) || {}).value || '';
 const esc = s  => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const fmt = n  => Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function formatEventDate(value) {
+    if (!value) return '';
+
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+function getVenueDisplay() {
+    const venue = g('id_venue');
+    const venueOther = g('id_venue_other').trim();
+    return venue === 'Others' ? venueOther : venue;
+}
+
+function getSelectedSdgs() {
+    return Array.from(document.querySelectorAll('input[name="unsdg_goals"]:checked'))
+        .map(input => input.value.trim())
+        .filter(Boolean);
+}
+
+function toggleVenueOther() {
+    const venueSelect = document.getElementById('id_venue');
+    const venueOtherField = document.getElementById('venueOtherField');
+    const venueOtherInput = document.getElementById('id_venue_other');
+    const showOther = venueSelect && venueSelect.value === 'Others';
+
+    if (venueOtherField) {
+        venueOtherField.style.display = showOther ? 'block' : 'none';
+    }
+
+    if (venueOtherInput) {
+        venueOtherInput.required = !!showOther;
+        if (!showOther) {
+            venueOtherInput.value = '';
+        }
+    }
+}
 
 async function downloadPDF() {
     const htmlString = buildDocHTML();
@@ -204,7 +255,8 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">III.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">Date &amp; Venue:</strong>
-          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">${esc(g('id_date_venue'))}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">Date: ${esc(formatEventDate(g('id_event_date')) || 'N/A')}</div>
+          <div style="min-height:18px;padding:1px 3px;width:100%;font-size:10.5pt;">Venue: ${esc(getVenueDisplay() || 'N/A')}</div>
         </div>
       </div>
 
@@ -236,7 +288,7 @@ function buildDocHTML() {
         <span style="font-weight:700;min-width:42px;padding-top:1px;">VII.</span>
         <div style="flex:1;">
           <strong style="text-align:left;display:block;">UNSDGs:</strong>
-          <div style="text-align:justify;white-space:pre-wrap;padding:1px 3px;display:block;width:100%;">${esc(g('id_unsdg'))}</div>
+          <div style="text-align:justify;white-space:pre-wrap;padding:1px 3px;display:block;width:100%;">${esc(getSelectedSdgs().join(', ') || 'N/A')}</div>
         </div>
       </div>
 
@@ -381,8 +433,16 @@ window.onload = () => {
                 formData.append('title', titleEl.value);
                 formData.append('proposal_file', pdfBlob, 'proposal.pdf');
 
-                document.querySelectorAll('#proposalForm input, #proposalForm textarea').forEach(input => {
-                    if (input.name && input.type !== 'file') {
+                document.querySelectorAll('#proposalForm input, #proposalForm textarea, #proposalForm select').forEach(input => {
+                    if (!input.name || input.type === 'file') {
+                        return;
+                    }
+
+                    if ((input.type === 'checkbox' || input.type === 'radio') && !input.checked) {
+                        return;
+                    }
+
+                    if (input.name !== 'title') {
                         formData.append(input.name, input.value);
                     }
                 });
@@ -414,5 +474,10 @@ window.onload = () => {
     }
 
     if (document.getElementById('budgetRows')) addBudgetRow();
+    document.querySelectorAll('input[name="unsdg_goals"]').forEach(input => {
+        input.addEventListener('change', updateSdgCount);
+    });
+    updateSdgCount();
+    toggleVenueOther();
     goTo(0);
 };
