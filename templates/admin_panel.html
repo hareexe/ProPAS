@@ -142,7 +142,7 @@
                             <tr>
                                 <td class="px-4 py-4 align-top">
                                     <div class="font-semibold text-slate-800">{{ proposal.title }}</div>
-                                    <div class="mt-1 text-xs text-slate-500">#{{ proposal.id }} · {{ proposal.created_at.strftime('%b %d, %Y %I:%M %p') if proposal.created_at else 'N/A' }}</div>
+                                    <div class="mt-1 text-xs text-slate-500">#{{ proposal.id }} · {{ proposal.created_at|datetime_ph }}</div>
                                 </td>
                                 <td class="px-4 py-4 align-top text-sm text-slate-700">{{ proposal.creator.username if proposal.creator else 'Unknown' }}</td>
                                 <td class="px-4 py-4 align-top">

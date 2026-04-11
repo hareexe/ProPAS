@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }} | ProPAS</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/org_home.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}" />
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="header-seal">
+        <img src="{{ url_for('static', filename='images/Icon.png') }}" alt="ProPAS Logo" class="header-logo-img">
+      </div>
+      <div>
+        <span class="logo-text">ProPAS</span>
+        <span class="logo-sub">{{ account_sub }}</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <nav class="sidebar-nav">
+      <a href="{{ url_for(dashboard_endpoint) }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      {% if current_user.account_type == 'Org' %}
+      <a href="{{ url_for('proposal.create') }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        Create Document
+      </a>
+      {% endif %}
+      <a href="{{ url_for(history_endpoint) }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        History
+      </a>
+      <a href="{{ url_for(calendar_endpoint) }}" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </a>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+    <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item--danger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </aside>
+
+  <div class="mobile-nav">
+    <a href="{{ url_for(dashboard_endpoint) }}" class="mobile-nav__item">Dashboard</a>
+    {% if current_user.account_type == 'Org' %}
+    <a href="{{ url_for('proposal.create') }}" class="mobile-nav__item">Create</a>
+    {% endif %}
+    <a href="{{ url_for(history_endpoint) }}" class="mobile-nav__item">History</a>
+    <a href="{{ url_for(calendar_endpoint) }}" class="mobile-nav__item mobile-nav__item--active">Calendar</a>
+    <a href="{{ url_for('auth.logout') }}" class="mobile-nav__item mobile-nav__item--danger">Logout</a>
+  </div>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="topbar-title">{{ page_title }}</h1>
+        <p class="topbar-sub">{{ page_subtitle }}</p>
+      </div>
+      <div class="calendar-toolbar">
+        <a href="{{ url_for(calendar_endpoint, year=prev_year, month=prev_month) }}" class="calendar-nav-btn">Previous</a>
+        <div class="calendar-month-chip">{{ month_name }} {{ today.replace(year=prev_year if false else today.year) and '' }}{{ year }}</div>
+        <a href="{{ url_for(calendar_endpoint, year=next_year, month=next_month) }}" class="calendar-nav-btn">Next</a>
+      </div>
+    </div>
+
+    <div class="calendar-layout">
+      <section class="calendar-card">
+        <div class="calendar-grid calendar-grid--head">
+          {% for label in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+          <div class="calendar-head-cell">{{ label }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="calendar-grid">
+          {% for week in month_matrix %}
+            {% for day in week %}
+            {% set day_events = events_by_day.get(day, []) if day else [] %}
+            <article class="calendar-day {% if not day %}calendar-day--empty{% endif %} {% if day and today.year == year and today.month == month and today.day == day %}calendar-day--today{% endif %}">
+              {% if day %}
+              <div class="calendar-day__top">
+                <span class="calendar-day__number">{{ day }}</span>
+                {% if day_events %}
+                <span class="calendar-day__count">{{ day_events|length }} item{{ '' if day_events|length == 1 else 's' }}</span>
+                {% endif %}
+              </div>
+              <div class="calendar-day__events">
+                {% for event in day_events[:3] %}
+                <div class="calendar-mini-event">
+                  <strong>{{ event.title }}</strong>
+                  <span>{{ event.org_name }}</span>
+                </div>
+                {% endfor %}
+                {% if day_events|length > 3 %}
+                <div class="calendar-more">+{{ day_events|length - 3 }} more</div>
+                {% endif %}
+              </div>
+              {% endif %}
+            </article>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="calendar-side">
+        <section class="calendar-summary">
+          <p class="calendar-summary__eyebrow">This Month</p>
+          <h2 class="calendar-summary__title">{{ monthly_events|length }} Approved Activities</h2>
+          <p class="calendar-summary__text">Each approved proposal appears on its scheduled event date with the venue and owning organization.</p>
+        </section>
+
+        <section class="calendar-events-card">
+          <div class="calendar-events-card__header">
+            <h3>Scheduled Activities</h3>
+            <span>{{ month_name }} {{ year }}</span>
+          </div>
+
+          <div class="calendar-events-list">
+            {% for event in monthly_events %}
+            <article class="calendar-event-item">
+              <div class="calendar-event-item__date">
+                <span class="calendar-event-item__day">{{ event.event_date.strftime('%d') }}</span>
+                <span class="calendar-event-item__month">{{ event.event_date.strftime('%b') }}</span>
+              </div>
+              <div class="calendar-event-item__body">
+                <h4>{{ event.title }}</h4>
+                <p>{{ event.org_name }}</p>
+                <div class="calendar-event-item__meta">
+                  <span>{{ event.date_label }}</span>
+                  <span>{{ event.venue }}</span>
+                </div>
+              </div>
+            </article>
+            {% else %}
+            <p class="calendar-empty">No approved activities scheduled for this month yet.</p>
+            {% endfor %}
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

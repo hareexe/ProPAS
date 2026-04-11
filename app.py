@@ -1,4 +1,7 @@
 import os
+import secrets
+from datetime import timezone
+from zoneinfo import ZoneInfo
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
@@ -13,8 +16,9 @@ from routes.proposal import proposal_bp
 from routes.office import office_bp
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'propas-nwu-secret-key'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+app.config['DISPLAY_TIMEZONE'] = 'Asia/Manila'
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'propas.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -43,6 +47,17 @@ def load_user(user_id):
     from models import User
     return db.session.get(User, int(user_id))
 
+
+@app.template_filter('datetime_ph')
+def datetime_ph(value, fmt='%b %d, %Y %I:%M %p'):
+    if value is None:
+        return 'N/A'
+
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+
+    return value.astimezone(ZoneInfo(app.config['DISPLAY_TIMEZONE'])).strftime(fmt)
+
 # Register Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
@@ -60,11 +75,12 @@ def init_approval_steps():
 def init_admin_account():
     from models import User
 
+    admin_password = os.environ.get('ADMIN_PASSWORD')
     admin = User.query.filter(User.username.ilike('Admin')).first()
-    if not admin:
+    if not admin and admin_password:
         admin = User(
             username='Admin',
-            password_hash=generate_password_hash('@Admin2026.'),
+            password_hash=generate_password_hash(admin_password),
             account_type='Admin',
             profile_data={}
         )
@@ -73,6 +89,8 @@ def init_admin_account():
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
+    elif not admin:
+        print("Admin account was not created because ADMIN_PASSWORD is not set.")
 
 
 with app.app_context():

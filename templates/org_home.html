@@ -40,6 +40,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Submission History
       </a>
+      <a href="{{ url_for('proposal.calendar_view') }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </a>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -54,6 +58,7 @@
     <a href="{{ url_for('proposal.org_home') }}" class="mobile-nav__item mobile-nav__item--active">Dashboard</a>
     <a href="{{ url_for('proposal.create') }}" class="mobile-nav__item">Create</a>
     <a href="{{ url_for('proposal.history') }}" class="mobile-nav__item">History</a>
+    <a href="{{ url_for('proposal.calendar_view') }}" class="mobile-nav__item">Calendar</a>
     <a href="{{ url_for('auth.logout') }}" class="mobile-nav__item mobile-nav__item--danger">Logout</a>
   </div>
 
@@ -74,6 +79,18 @@
       </div>
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true, category_filter=['auth-success', 'auth-danger']) %}
+      {% if messages %}
+      <section class="flash-stack">
+        {% for category, message in messages %}
+        <article class="flash-card {% if category == 'auth-success' %}flash-card--success{% else %}flash-card--danger{% endif %}">
+          {{ message }}
+        </article>
+        {% endfor %}
+      </section>
+      {% endif %}
+    {% endwith %}
+
     <section class="table-card" style="margin-bottom: 24px;">
       <div class="table-header">
         <div>
@@ -90,7 +107,7 @@
               <div style="font-weight: 700; color: #0f172a;">{{ notification.title }}</div>
               <p style="margin: 6px 0 0; color: #475569;">{{ notification.message }}</p>
             </div>
-            <span style="font-size: 12px; color: #94a3b8; white-space: nowrap;">{{ notification.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+            <span style="font-size: 12px; color: #94a3b8; white-space: nowrap;">{{ notification.created_at|datetime_ph }}</span>
           </div>
         </article>
         {% else %}
@@ -136,12 +153,18 @@
           <p class="status-panel__eyebrow">Proposal Tracking</p>
           <h2 class="status-panel__title">{{ selected_proposal.title }}</h2>
           <p class="status-panel__meta">
-            Document #{{ selected_proposal.id }} · Submitted {{ selected_proposal.created_at.strftime('%b %d, %Y') if selected_proposal.created_at else 'N/A' }}
+            Document #{{ selected_proposal.id }} · Submitted {{ selected_proposal.created_at|datetime_ph('%b %d, %Y') }}
           </p>
         </div>
         <a href="{{ url_for('proposal.org_home') }}" class="btn-view">Back to Dashboard</a>
       </div>
 
+      <div class="detail-tabs">
+        <a href="{{ url_for('auth.view_status', proposal_id=selected_proposal.id, tab='overview') }}" class="detail-tab {% if active_tab != 'chat' %}detail-tab--active{% endif %}">Overview</a>
+        <a href="{{ url_for('auth.view_status', proposal_id=selected_proposal.id, tab='chat') }}" class="detail-tab {% if active_tab == 'chat' %}detail-tab--active{% endif %}">Chat</a>
+      </div>
+
+      {% if active_tab != 'chat' %}
       <div class="status-overview">
         <div>
           <div class="status-overview__label">Current Status</div>
@@ -217,7 +240,7 @@
               <span>{{ step.signed_name }}</span>
               {% endif %}
               {% if step.approved_at %}
-              <span>{{ step.approved_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+              <span>{{ step.approved_at|datetime_ph }}</span>
               {% endif %}
             </div>
           </div>
@@ -225,7 +248,55 @@
         </article>
         {% endfor %}
       </div>
+      
+      <section class="conversation-panel">
+        {% else %}
+        <div class="conversation-panel__header">
+          <div>
+            <p class="status-panel__eyebrow">Proposal Conversation</p>
+            <h3 class="conversation-panel__title">Questions and Clarifications</h3>
+            <p class="status-panel__meta">
+              {% if conversation_office %}
+              This thread is shared with {{ conversation_office }} for proposal-related questions.
+              {% else %}
+              This thread is shared with the office handling this proposal.
+              {% endif %}
+            </p>
+          </div>
+        </div>
 
+        <div class="conversation-thread">
+          {% for message in messages %}
+          <article class="chat-bubble {% if message.sender_id == current_user.id %}chat-bubble--mine{% else %}chat-bubble--office{% endif %}">
+            <div class="chat-bubble__meta">
+              <span class="chat-bubble__author">
+                {% if message.sender_id == current_user.id %}
+                You
+                {% else %}
+                {{ message.sender.username }} ({{ message.sender.account_type }})
+                {% endif %}
+              </span>
+              <span>{{ message.created_at|datetime_ph }}</span>
+            </div>
+            <p class="chat-bubble__body">{{ message.body }}</p>
+          </article>
+          {% else %}
+          <p class="conversation-empty">No messages yet. Use this space to ask the office for clarification about this proposal.</p>
+          {% endfor %}
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.send_message', proposal_id=selected_proposal.id) }}" class="conversation-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="conversation-form__label" for="org-message">Send a message to the office</label>
+          <textarea id="org-message" name="message" rows="4" class="conversation-form__input" placeholder="Type your question or clarification here..." required></textarea>
+          <div class="conversation-form__actions">
+            <button type="submit" class="btn-submit">Send Message</button>
+          </div>
+        </form>
+      </section>
+      {% endif %}
+
+      {% if active_tab != 'chat' %}
       {% if selected_proposal.file_path %}
       <section class="status-pdf">
         <div class="status-pdf__header">
@@ -253,6 +324,7 @@
       <div class="status-note status-note--danger">
         <strong>Review note:</strong> {{ rejection_remarks }}
       </div>
+      {% endif %}
       {% endif %}
     </section>
     {% endif %}
@@ -309,7 +381,7 @@
                 {% else %}{{ prop.creator.username }}
                 {% endif %}
             </td>
-            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
+            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at|datetime_ph('%b %d, %Y') if prop.created_at else 'Processing...' }}</td>
             
             <td data-label="Status">
               {% if prop.status == 'REJECTED' %}

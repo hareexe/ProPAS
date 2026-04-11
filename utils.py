@@ -1,4 +1,6 @@
 import os, io
+import calendar
+from datetime import datetime
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import LETTER
@@ -55,3 +57,38 @@ def add_signature_page(upload_folder, file_path, role_key, officer_name):
     except Exception as e:
         print(f"PDF Error: {e}")
         return False
+
+
+def parse_event_date(value):
+    if not value:
+        return None
+
+    if isinstance(value, datetime):
+        return value.date()
+
+    if hasattr(value, 'year') and hasattr(value, 'month') and hasattr(value, 'day'):
+        return value
+
+    raw = str(value).strip()
+    if not raw:
+        return None
+
+    for fmt in ('%Y-%m-%d', '%B %d, %Y', '%b %d, %Y', '%m/%d/%Y'):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def get_proposal_venue(proposal_data):
+    proposal_data = proposal_data or {}
+    venue = (proposal_data.get('venue') or '').strip()
+    venue_other = (proposal_data.get('venue_other') or '').strip()
+    if venue == 'Others':
+        return venue_other or 'Other venue'
+    return venue or venue_other or 'Venue not specified'
+
+
+def build_month_matrix(year, month):
+    return calendar.Calendar(firstweekday=6).monthdayscalendar(year, month)

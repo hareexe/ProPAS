@@ -1,10 +1,13 @@
 import os
 import re
+import json
+import calendar
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, current_app, abort
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog, Notification
+from utils import build_month_matrix, get_proposal_venue, parse_event_date
 
 # Define the Blueprint - Only for Organization/Student tasks
 proposal_bp = Blueprint('proposal', __name__)
@@ -35,6 +38,22 @@ SDG_OPTIONS = [
     {'value': 'SDG 16: Peace, Justice and Strong Institutions', 'label': 'SDG 16: Peace, Justice and Strong Institutions'},
     {'value': 'SDG 17: Partnerships for the Goals', 'label': 'SDG 17: Partnerships for the Goals'},
 ]
+
+REQUIRED_PROPOSAL_FIELDS = {
+    'title': 'Project title',
+    'sponsor': 'Sponsor / organization',
+    'event_date': 'Event date',
+    'venue': 'Venue',
+    'participation': 'Target participants',
+    'rationale': 'Background / rationale',
+    'approach_list': 'Approach / process',
+    'objectives_list': 'Objectives',
+    'expected_outcome': 'Expected outcomes',
+    'funding_source': 'Source of funding',
+    'signatory_ProjPresident': 'Org president / project coordinator',
+    'signatory_adviser': 'Person in-charge / adviser',
+    'signatory_dept_head': 'Department / program head',
+}
 
 
 def _require_org_account():
@@ -137,6 +156,137 @@ def _normalize_proposal_form_data(form_data):
 
     return normalized
 
+
+def _extract_budget_items(form_data):
+    raw_budget_items = ''
+    if hasattr(form_data, 'get'):
+        raw_budget_items = form_data.get('budget_items', '')
+    elif isinstance(form_data, dict):
+        raw_budget_items = form_data.get('budget_items', '')
+
+    if not raw_budget_items:
+        return []
+
+    try:
+        items = json.loads(raw_budget_items)
+    except (TypeError, json.JSONDecodeError):
+        return []
+
+    if not isinstance(items, list):
+        return []
+
+    normalized_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        description = str(item.get('description') or '').strip()
+        quantity = float(item.get('quantity') or 0)
+        unit_cost = float(item.get('unit_cost') or 0)
+        normalized_items.append({
+            'description': description,
+            'quantity': quantity,
+            'unit_cost': unit_cost,
+            'amount': quantity * unit_cost,
+        })
+    return normalized_items
+
+
+def _validate_proposal_payload(form_data, file_storage=None):
+    normalized_data = _normalize_proposal_form_data(form_data)
+    budget_items = _extract_budget_items(form_data)
+
+    for field_name, label in REQUIRED_PROPOSAL_FIELDS.items():
+        value = (form_data.get(field_name) or '').strip()
+        if not value:
+            return None, f'{label} is required.'
+
+    if normalized_data.get('venue') == 'Others' and not normalized_data.get('venue_other'):
+        return None, 'Please specify the other venue.'
+
+    if not normalized_data.get('unsdg_goals'):
+        return None, 'Select at least one UNSDG target.'
+
+    budget_value = (form_data.get('budget') or '').strip()
+    try:
+        budget_amount = float(budget_value)
+    except ValueError:
+        return None, 'Proposed budget must be a valid amount.'
+
+    if budget_amount <= 0:
+        return None, 'Proposed budget must be greater than zero.'
+
+    if not budget_items:
+        return None, 'Add at least one budget item.'
+
+    for item in budget_items:
+        if not item['description']:
+            return None, 'Every budget item needs a description.'
+        if item['quantity'] <= 0:
+            return None, 'Every budget item quantity must be greater than zero.'
+        if item['unit_cost'] < 0:
+            return None, 'Budget item unit cost cannot be negative.'
+
+    if file_storage is not None and (not file_storage or file_storage.filename == ''):
+        return None, 'Proposal PDF generation failed. Please try again.'
+
+    normalized_data['budget'] = budget_amount
+    normalized_data['budget_items'] = budget_items
+    return normalized_data, None
+
+
+def _calendar_month_context(events, year, month):
+    month_matrix = build_month_matrix(year, month)
+    month_name = calendar.month_name[month]
+    today = date.today()
+
+    events_by_day = {}
+    monthly_events = []
+    for event in events:
+        if event['event_date'].year == year and event['event_date'].month == month:
+            events_by_day.setdefault(event['event_date'].day, []).append(event)
+            monthly_events.append(event)
+
+    for day_events in events_by_day.values():
+        day_events.sort(key=lambda item: (item['event_date'], item['title'].lower()))
+
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+    return {
+        'month_matrix': month_matrix,
+        'events_by_day': events_by_day,
+        'monthly_events': sorted(monthly_events, key=lambda item: (item['event_date'], item['title'].lower())),
+        'month_name': month_name,
+        'today': today,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
+    }
+
+
+def _approved_calendar_events():
+    events = []
+    proposals = Proposal.query.filter_by(status='APPROVED').order_by(Proposal.created_at.desc()).all()
+
+    for proposal in proposals:
+        proposal_data = _normalize_proposal_form_data(proposal.proposal_data or {})
+        event_date = parse_event_date(proposal_data.get('event_date'))
+        if not event_date:
+            continue
+
+        venue = get_proposal_venue(proposal_data)
+        events.append({
+            'proposal_id': proposal.id,
+            'title': proposal.title,
+            'org_name': proposal.creator.username if proposal.creator else 'Unknown organization',
+            'event_date': event_date,
+            'date_label': event_date.strftime('%B %d, %Y'),
+            'venue': venue,
+        })
+
+    return sorted(events, key=lambda item: (item['event_date'], item['title'].lower()))
+
 @proposal_bp.route('/org-home')
 @login_required
 def org_home():
@@ -164,6 +314,38 @@ def org_home():
         unread_notifications=unread_notifications,
     )
 
+
+@proposal_bp.route('/calendar')
+@login_required
+def calendar_view():
+    redirect_response = _require_org_account()
+    if redirect_response:
+        return redirect_response
+
+    today = date.today()
+    year = request.args.get('year', type=int) or today.year
+    month = request.args.get('month', type=int) or today.month
+
+    if month < 1 or month > 12:
+        month = today.month
+    if year < 2000 or year > 2100:
+        year = today.year
+
+    events = _approved_calendar_events()
+    calendar_context = _calendar_month_context(events, year, month)
+
+    return render_template(
+        'calendar.html',
+        page_title='Calendar of Activities',
+        page_subtitle='Track approved activities by date, venue, and organization.',
+        account_sub='Org',
+        dashboard_endpoint='proposal.org_home',
+        history_endpoint='proposal.history',
+        calendar_endpoint='proposal.calendar_view',
+        review_endpoint=None,
+        **calendar_context,
+    )
+
 @proposal_bp.route('/create-proposal', methods=['GET', 'POST'])
 @login_required
 def create():
@@ -183,10 +365,11 @@ def create():
     if request.method == 'POST':
         try:
             file = request.files.get('proposal_file')
-            title = request.form.get('title')
-            
-            if not title:
-                return jsonify({"error": "Missing title"}), 400
+            normalized_payload, validation_error = _validate_proposal_payload(request.form, file)
+            if validation_error:
+                return jsonify({"error": validation_error}), 400
+
+            title = (request.form.get('title') or '').strip()
 
             # 1. HANDLE FILE UPLOAD
             filename = proposal_to_edit.file_path if proposal_to_edit else None
@@ -212,7 +395,7 @@ def create():
                 if filename:
                     proposal_to_edit.file_path = filename
                 
-                proposal_to_edit.proposal_data = _normalize_proposal_form_data(request.form)
+                proposal_to_edit.proposal_data = normalized_payload
                 proposal_to_edit.status = 'PENDING'
                 
                 # Reset any rejected steps to pending
@@ -236,7 +419,7 @@ def create():
                 new_prop = Proposal(
                     title=title,
                     file_path=None,
-                    proposal_data=_normalize_proposal_form_data(request.form),
+                    proposal_data=normalized_payload,
                     creator_id=current_user.id,
                     current_step_id=steps[0].id if steps else None,
                     status='PENDING'

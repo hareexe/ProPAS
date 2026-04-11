@@ -38,6 +38,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         History
       </a>
+
+      <a href="{{ url_for('office.calendar_view') if current_user.account_type == 'Office' else url_for('proposal.calendar_view') }}" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </a>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -50,6 +55,7 @@
   <div class="mobile-nav">
     <a href="{{ url_for('office.review') if current_user.account_type == 'Office' else url_for('proposal.org_home') }}" class="mobile-nav__item">Dashboard</a>
     <a href="{{ url_for('office.master_history') if current_user.account_type == 'Office' else url_for('proposal.history') }}" class="mobile-nav__item mobile-nav__item--active">History</a>
+    <a href="{{ url_for('office.calendar_view') if current_user.account_type == 'Office' else url_for('proposal.calendar_view') }}" class="mobile-nav__item">Calendar</a>
     <a href="{{ url_for('auth.logout') }}" class="mobile-nav__item mobile-nav__item--danger">Logout</a>
   </div>
 
@@ -125,7 +131,7 @@
                   {% endif %}
                 {% endif %}
             </td>
-            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at.strftime('%b %d, %Y') if prop.created_at else 'N/A' }}</td>
+            <td class="td-muted" data-label="Date Submitted">{{ prop.created_at|datetime_ph('%b %d, %Y') if prop.created_at else 'N/A' }}</td>
             <td data-label="Status">
               {% if prop.status == 'APPROVED' %}
                 <span class="status-badge status-badge--approved" style="background: #ecfdf5; color: #059669;">Fully Approved</span>

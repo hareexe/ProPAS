@@ -111,3 +111,16 @@ class Notification(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     proposal = db.relationship('Proposal', backref=db.backref('notifications', lazy=True))
+
+
+class ProposalMessage(db.Model):
+    __tablename__ = 'proposal_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    proposal_id = db.Column(db.Integer, db.ForeignKey('proposals.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    sender_role = db.Column(db.String(20), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    proposal = db.relationship('Proposal', backref=db.backref('messages', lazy=True))
+    sender = db.relationship('User')
