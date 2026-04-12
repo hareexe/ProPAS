@@ -179,6 +179,14 @@
                             <div>
                                 <h2 class="font-semibold text-slate-800">Optimized PDF Viewer</h2>
                                 <p class="text-sm text-slate-500">Embedded viewer with fit-to-width defaults for easier reading.</p>
+                                {% if selected_proposal.proposal_data and selected_proposal.proposal_data.get('supporting_document_path') %}
+                                <p class="text-sm text-slate-500">
+                                    Supporting document:
+                                    <a href="{{ url_for('static', filename='uploads/' + selected_proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700">
+                                        {{ selected_proposal.proposal_data.get('supporting_document_name', 'Open attachment') }}
+                                    </a>
+                                </p>
+                                {% endif %}
                             </div>
                             <span class="text-xs uppercase tracking-wider text-slate-400">PDF Preview</span>
                         </div>

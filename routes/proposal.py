@@ -101,6 +101,14 @@ def _build_proposal_filename(username, sequence, version=None):
     return f"{base_name}.pdf"
 
 
+def _build_supporting_filename(username, sequence, original_filename, version=None):
+    extension = os.path.splitext(secure_filename(original_filename or ''))[1].lower() or '.bin'
+    base_name = f"{_proposal_prefix(username)}{sequence}_support"
+    if version and version > 1:
+        base_name = f"{base_name}_v{version}"
+    return f"{base_name}{extension}"
+
+
 def _resume_step_for_resubmission(proposal, steps):
     approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
 
@@ -280,6 +288,16 @@ def _validate_proposal_payload(form_data, file_storage=None):
     return normalized_data, None
 
 
+def _save_supporting_document(file_storage, upload_path, username, sequence, version=None):
+    if not file_storage or file_storage.filename == '':
+        return None, None
+
+    original_name = secure_filename(file_storage.filename)
+    supporting_filename = _build_supporting_filename(username, sequence, original_name, version=version)
+    file_storage.save(os.path.join(upload_path, supporting_filename))
+    return supporting_filename, original_name
+
+
 def _calendar_month_context(events, year, month):
     month_matrix = build_month_matrix(year, month)
     month_name = calendar.month_name[month]
@@ -412,6 +430,7 @@ def create():
                 return jsonify({"error": validation_error}), 400
 
             title = (request.form.get('title') or '').strip()
+            supporting_file = request.files.get('supporting_document')
 
             # 1. HANDLE FILE UPLOAD
             filename = proposal_to_edit.file_path if proposal_to_edit else None
@@ -436,8 +455,26 @@ def create():
 
                 if filename:
                     proposal_to_edit.file_path = filename
-                
+
+                existing_sequence = _extract_proposal_sequence(proposal_to_edit.file_path, current_user.username)
+                if not existing_sequence:
+                    existing_sequence = _fallback_proposal_sequence(proposal_to_edit)
+
+                supporting_path = proposal_to_edit.proposal_data.get('supporting_document_path') if proposal_to_edit.proposal_data else None
+                supporting_name = proposal_to_edit.proposal_data.get('supporting_document_name') if proposal_to_edit.proposal_data else None
+                if supporting_file and supporting_file.filename != '':
+                    supporting_path, supporting_name = _save_supporting_document(
+                        supporting_file,
+                        upload_path,
+                        current_user.username,
+                        existing_sequence,
+                        version=proposal_to_edit.version_number,
+                    )
+
                 proposal_to_edit.proposal_data = normalized_payload
+                if supporting_path:
+                    proposal_to_edit.proposal_data['supporting_document_path'] = supporting_path
+                    proposal_to_edit.proposal_data['supporting_document_name'] = supporting_name
                 _reset_proposal_for_resubmission(proposal_to_edit)
                 db.session.add(DocumentLog(
                     document_id=proposal_to_edit.id,
@@ -462,6 +499,19 @@ def create():
                     filename = _build_proposal_filename(current_user.username, next_sequence)
                     file.save(os.path.join(upload_path, filename))
                     new_prop.file_path = filename
+                else:
+                    next_sequence = _next_proposal_sequence(current_user.id, current_user.username)
+
+                if supporting_file and supporting_file.filename != '':
+                    supporting_path, supporting_name = _save_supporting_document(
+                        supporting_file,
+                        upload_path,
+                        current_user.username,
+                        next_sequence,
+                    )
+                    normalized_payload['supporting_document_path'] = supporting_path
+                    normalized_payload['supporting_document_name'] = supporting_name
+                    new_prop.proposal_data = normalized_payload
                 
                 for step in steps:
                     db.session.add(DocumentApproval(document_id=new_prop.id, step_id=step.id, status='pending'))

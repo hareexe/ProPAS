@@ -121,6 +121,18 @@
                                     <dt class="text-slate-400 uppercase tracking-wider text-xs">Sponsor</dt>
                                     <dd class="mt-1 font-medium text-slate-700">{{ proposal.proposal_data.get('sponsor', 'N/A') if proposal.proposal_data else 'N/A' }}</dd>
                                 </div>
+                                <div>
+                                    <dt class="text-slate-400 uppercase tracking-wider text-xs">Supporting Document</dt>
+                                    <dd class="mt-1 font-medium text-slate-700">
+                                        {% if proposal.proposal_data and proposal.proposal_data.get('supporting_document_path') %}
+                                        <a href="{{ url_for('static', filename='uploads/' + proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700">
+                                            {{ proposal.proposal_data.get('supporting_document_name', 'Open attachment') }}
+                                        </a>
+                                        {% else %}
+                                        None attached
+                                        {% endif %}
+                                    </dd>
+                                </div>
                             </dl>
                         </div>
 

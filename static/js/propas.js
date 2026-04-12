@@ -521,6 +521,11 @@ window.onload = () => {
                 formData.append('title', titleEl.value);
                 formData.append('proposal_file', pdfBlob, 'proposal.pdf');
 
+                const supportingDocument = document.getElementById('id_supporting_document')?.files?.[0];
+                if (supportingDocument) {
+                    formData.append('supporting_document', supportingDocument);
+                }
+
                 document.querySelectorAll('#proposalForm input, #proposalForm textarea, #proposalForm select').forEach(input => {
                     if (!input.name || input.type === 'file') return;
                     if ((input.type === 'checkbox' || input.type === 'radio') && !input.checked) return;
