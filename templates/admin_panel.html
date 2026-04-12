@@ -56,7 +56,10 @@
                         </div>
                         <div>
                             <label for="id_admin_password" class="mb-2 block text-sm font-semibold text-slate-700">Password</label>
-                            <input id="id_admin_password" name="password" type="text" required class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                            <div class="relative">
+                                <input id="id_admin_password" name="password" type="password" required class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-20 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                <button type="button" data-toggle-password="id_admin_password" class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600 hover:text-blue-700">Show</button>
+                            </div>
                         </div>
                         <div>
                             <label for="id_admin_account_type" class="mb-2 block text-sm font-semibold text-slate-700">Account Type</label>
@@ -103,7 +106,10 @@
                                     <td class="px-4 py-4">
                                 <form method="POST" action="{{ url_for('admin.reset_password', user_id=account.id) }}" class="flex flex-col gap-2 md:flex-row">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="text" name="new_password" placeholder="New password" required class="min-w-[220px] rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                    <div class="relative">
+                                        <input id="reset_password_{{ account.id }}" type="password" name="new_password" placeholder="New password" required class="min-w-[220px] rounded-xl border border-slate-300 px-4 py-2.5 pr-20 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                        <button type="button" data-toggle-password="reset_password_{{ account.id }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600 hover:text-blue-700">Show</button>
+                                    </div>
                                     <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Reset</button>
                                 </form>
                                     </td>
@@ -171,5 +177,17 @@
             {% endif %}
         </main>
     </div>
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = document.getElementById(button.dataset.togglePassword);
+                if (!input) return;
+
+                const showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                button.textContent = showing ? 'Show' : 'Hide';
+            });
+        });
+    </script>
 </body>
 </html>

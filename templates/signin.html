@@ -41,7 +41,16 @@
         </div>
         <div class="input-group">
             <label>Password</label>
-            <input type="password" name="password" placeholder="Enter your password" required>
+            <div style="position:relative;">
+                <input id="id_password" type="password" name="password" placeholder="Enter your password" required style="padding-right:88px;">
+                <button
+                    type="button"
+                    data-toggle-password="id_password"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:none; color:#2563eb; font-weight:600; cursor:pointer;"
+                >
+                    Show
+                </button>
+            </div>
         </div>
         <button type="submit" class="login-btn">LOG IN</button>
     </form>
@@ -50,6 +59,19 @@
         <a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.togglePassword);
+            if (!input) return;
+
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            button.textContent = showing ? 'Show' : 'Hide';
+        });
+    });
+</script>
 
 </body>
 </html>
