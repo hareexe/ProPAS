@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_user, logout_user, current_user, login_required 
 from werkzeug.security import check_password_hash
-from models import db, User, Proposal, ApprovalStep, DocumentApproval, Notification, ProposalMessage
+from models import db, User, Proposal, ApprovalStep, DocumentApproval, ProposalMessage
 auth_bp = Blueprint('auth', __name__)
 
 OFFICE_DISPLAY_NAMES = {
@@ -19,6 +19,12 @@ def _home_endpoint_for_user(user):
     if user.account_type == 'Office':
         return 'office.review'
     return 'proposal.org_home'
+
+
+def _home_calendar_endpoint_for_user(user):
+    if user.account_type == 'Office':
+        return 'office.calendar_view'
+    return 'proposal.calendar_view'
 
 
 def _office_step_for_conversation(proposal):
@@ -49,6 +55,13 @@ def _office_accounts_for_conversation(proposal):
     ).all()
     return office_accounts, office_step
 
+
+def _conversation_messages(proposal_id, office_step_id):
+    return ProposalMessage.query.filter_by(
+        proposal_id=proposal_id,
+        office_step_id=office_step_id,
+    ).order_by(ProposalMessage.created_at.asc()).all()
+
 @auth_bp.route('/', methods=['GET', 'POST'])
 def signin():
     if current_user.is_authenticated:
@@ -70,6 +83,12 @@ def forgot_password():
     return render_template('forgot_password.html')
 
 
+@auth_bp.route('/calendar')
+@login_required
+def calendar_redirect():
+    return redirect(url_for(_home_calendar_endpoint_for_user(current_user)))
+
+
 @auth_bp.route('/view-status/<int:proposal_id>/messages', methods=['POST'])
 @login_required
 def send_message(proposal_id):
@@ -83,25 +102,15 @@ def send_message(proposal_id):
         flash('Message cannot be empty.', 'auth-danger')
         return redirect(url_for('auth.view_status', proposal_id=proposal.id, tab='chat'))
 
+    _, office_step = _office_accounts_for_conversation(proposal)
+
     db.session.add(ProposalMessage(
         proposal_id=proposal.id,
+        office_step_id=office_step.id if office_step else None,
         sender_id=current_user.id,
         sender_role=current_user.account_type,
         body=body,
     ))
-
-    office_accounts, office_step = _office_accounts_for_conversation(proposal)
-    for office_account in office_accounts:
-        db.session.add(Notification(
-            recipient_id=office_account.id,
-            proposal_id=proposal.id,
-            title='New Organization Message',
-            message=(
-                f"{current_user.username} sent a message about proposal '{proposal.title}'"
-                f"{f' for {office_step.name}' if office_step else ''}."
-            ),
-            notification_type='info',
-        ))
 
     db.session.commit()
     flash('Your message was sent to the office thread.', 'auth-success')
@@ -125,10 +134,8 @@ def view_status(proposal_id):
     pending = Proposal.query.filter_by(creator_id=current_user.id, status='PENDING').count()
     approved = Proposal.query.filter_by(creator_id=current_user.id, status='APPROVED').count()
     rejected = Proposal.query.filter_by(creator_id=current_user.id, status='REJECTED').count()
-    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
-    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
-    messages = ProposalMessage.query.filter_by(proposal_id=selected_proposal.id).order_by(ProposalMessage.created_at.asc()).all()
     office_step = _office_step_for_conversation(selected_proposal)
+    messages = _conversation_messages(selected_proposal.id, office_step.id) if office_step else []
 
     steps = ApprovalStep.query.order_by(ApprovalStep.step_order).all()
     approvals_by_step = {approval.step_id: approval for approval in selected_proposal.approvals}
@@ -191,8 +198,6 @@ def view_status(proposal_id):
         pending_count=pending,
         approved_count=approved,
         rejected_count=rejected,
-        notifications=notifications,
-        unread_notifications=unread_notifications,
         messages=messages,
         conversation_office=office_step.name if office_step else None,
         active_tab=active_tab,

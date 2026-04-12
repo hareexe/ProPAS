@@ -59,13 +59,13 @@
                    value="{{ edit_data.proposal_data.get('sponsor', '') if edit_data else '' }}" />
           </div>
           <div class="field">
-            <label for="id_event_date">III. Event Date</label>
+            <label for="id_event_date">III. Event Date <span class="req">*</span></label>
             <input type="date" id="id_event_date" name="event_date"
-                   value="{{ edit_data.proposal_data.get('event_date', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('event_date', '') if edit_data else '' }}" required />
           </div>
           <div class="field">
-            <label for="id_venue">III. Venue</label>
-            <select id="id_venue" name="venue" title="Venue" aria-label="Venue" onchange="toggleVenueOther()">
+            <label for="id_venue">III. Venue <span class="req">*</span></label>
+            <select id="id_venue" name="venue" title="Venue" aria-label="Venue" onchange="toggleVenueOther()" required>
               <option value="">Select venue</option>
               {% for venue in venue_options %}
               <option value="{{ venue }}" {% if edit_data and edit_data.proposal_data.get('venue', '') == venue %}selected{% endif %}>{{ venue }}</option>
@@ -73,14 +73,14 @@
             </select>
           </div>
           <div class="field" id="venueOtherField" style="grid-column:1/-1; display:none;">
-            <label for="id_venue_other">Specify Other Venue</label>
+            <label for="id_venue_other">Specify Other Venue <span class="req">*</span></label>
             <input type="text" id="id_venue_other" name="venue_other" placeholder="Enter venue name"
                    value="{{ edit_data.proposal_data.get('venue_other', '') if edit_data else '' }}" />
           </div>
           <div class="field" style="grid-column:1/-1">
-            <label for="id_participation">IV. Target Participants</label>
+            <label for="id_participation">IV. Target Participants <span class="req">*</span></label>
             <input type="text" id="id_participation" name="participation" placeholder="e.g., All 1st Year Engineering Students" 
-                   value="{{ edit_data.proposal_data.get('participation', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('participation', '') if edit_data else '' }}" required />
           </div>
         </div>
       </div>
@@ -95,8 +95,8 @@
             <div class="field-footer"><span class="char-count" id="rationale-count">0 / 2000</span></div>
           </div>
           <div class="field">
-            <label for="id_approach">VIII. Approach / Process</label>
-            <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" oninput="countChars(this,'approach-count')" placeholder="Describe the approach or methodology...">{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
+            <label for="id_approach">VIII. Approach / Process <span class="req">*</span></label>
+            <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" oninput="countChars(this,'approach-count')" placeholder="Describe the approach or methodology..." required>{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="approach-count">0 / 2000</span></div>
           </div>
         </div>
@@ -113,7 +113,7 @@
             <div class="field-footer"><span class="char-count" id="obj-count">0 / 2000</span></div>
           </div>
           <div class="field">
-            <label id="id_unsdg_group_label" for="id_unsdg_group">VII. UNSDGs (Sustainable Development Goals) Targets</label>
+            <label id="id_unsdg_group_label" for="id_unsdg_group">VII. UNSDGs (Sustainable Development Goals) Targets <span class="req">*</span></label>
             <div class="sdg-grid" id="id_unsdg_group" role="group" aria-labelledby="id_unsdg_group_label">
               {% for sdg in sdg_options %}
               <label class="sdg-option">
@@ -125,8 +125,8 @@
             <div class="field-footer"><span class="char-count" id="unsdg-count">0 selected</span></div>
           </div>
           <div class="field">
-            <label for="id_outcome">IX. Expected Outcomes</label>
-            <textarea id="id_outcome" name="expected_outcome" rows="4" maxlength="2000" oninput="countChars(this,'outcome-count')" placeholder="Describe the expected results...">{{ edit_data.proposal_data.get('expected_outcome', '') if edit_data else '' }}</textarea>
+            <label for="id_outcome">IX. Expected Outcomes <span class="req">*</span></label>
+            <textarea id="id_outcome" name="expected_outcome" rows="4" maxlength="2000" oninput="countChars(this,'outcome-count')" placeholder="Describe the expected results..." required>{{ edit_data.proposal_data.get('expected_outcome', '') if edit_data else '' }}</textarea>
             <div class="field-footer"><span class="char-count" id="outcome-count">0 / 2000</span></div>
           </div>
         </div>
@@ -136,7 +136,7 @@
         <div class="section-title">Budget</div>
         <div class="section-subtitle">Form section X of OSA-F05A.</div>
         <div class="field" style="margin-bottom:18px;">
-          <label>X-b. Itemization of Proposed Budget</label>
+          <label>X-b. Itemization of Proposed Budget <span class="req">*</span></label>
           <div class="bud-table-wrap">
             <table class="bud-table" id="budgetTable">
               <thead>
@@ -166,12 +166,12 @@
           <div class="field">
             <label for="id_budget">X-a. Proposed Budget (₱)</label>
             <input type="number" id="id_budget" name="budget" placeholder="0.00" step="0.01" 
-                   value="{{ edit_data.proposal_data.get('budget', 0) if edit_data else 0 }}" />
+                   value="{{ edit_data.proposal_data.get('budget', 0) if edit_data else 0 }}" required min="0.01" />
           </div>
           <div class="field">
-            <label for="id_funding_source">X-c. Source of Funding</label>
+            <label for="id_funding_source">X-c. Source of Funding <span class="req">*</span></label>
             <input type="text" id="id_funding_source" name="funding_source" placeholder="e.g., Student Org Fund" 
-                   value="{{ edit_data.proposal_data.get('funding_source', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('funding_source', '') if edit_data else '' }}" required />
           </div>
         </div>
       </div>
@@ -183,17 +183,17 @@
           <div class="sig-card">
             <label class="sig-role" for="id_sig_president">Org President / Project Coordinator</label>
             <input type="text" id="id_sig_president" name="signatory_ProjPresident" placeholder="Full name" 
-                   value="{{ edit_data.proposal_data.get('signatory_ProjPresident', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('signatory_ProjPresident', '') if edit_data else '' }}" required />
           </div>
           <div class="sig-card">
             <label class="sig-role" for="id_sig_adviser">Person In-Charge / Adviser</label>
             <input type="text" id="id_sig_adviser" name="signatory_adviser" placeholder="Full name" 
-                   value="{{ edit_data.proposal_data.get('signatory_adviser', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('signatory_adviser', '') if edit_data else '' }}" required />
           </div>
           <div class="sig-card">
             <label class="sig-role" for="id_sig_dept">Department / Program Head</label>
             <input type="text" id="id_sig_dept" name="signatory_dept_head" placeholder="Full name" 
-                   value="{{ edit_data.proposal_data.get('signatory_dept_head', '') if edit_data else '' }}" />
+                   value="{{ edit_data.proposal_data.get('signatory_dept_head', '') if edit_data else '' }}" required />
           </div>
         </div>
       </div>
@@ -230,6 +230,9 @@
 </div>
 
 <div id="printTarget" style="display:none;"></div>
+<script>
+  window.initialBudgetItems = {{ edit_data.proposal_data.get('budget_items', [])|tojson if edit_data else '[]' }};
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/propas.js') }}"></script>
 </body>

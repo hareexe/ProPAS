@@ -6,8 +6,8 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from werkzeug.utils import secure_filename
-from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog, Notification
-from utils import build_month_matrix, get_proposal_venue, parse_event_date
+from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog
+from utils import build_month_matrix, get_proposal_venue, normalize_proposal_data, parse_event_date
 
 # Define the Blueprint - Only for Organization/Student tasks
 proposal_bp = Blueprint('proposal', __name__)
@@ -101,6 +101,52 @@ def _build_proposal_filename(username, sequence, version=None):
     return f"{base_name}.pdf"
 
 
+def _resume_step_for_resubmission(proposal, steps):
+    approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
+
+    for step in steps:
+        approval = approvals_by_step.get(step.id)
+        if not approval or approval.status != 'approved':
+            return step
+
+    return None
+
+
+def _reset_proposal_for_resubmission(proposal):
+    steps = ApprovalStep.query.order_by(ApprovalStep.step_order.asc()).all()
+    approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
+
+    for step in steps:
+        if step.id in approvals_by_step:
+            continue
+        approval = DocumentApproval(document_id=proposal.id, step_id=step.id, status='pending')
+        db.session.add(approval)
+        proposal.approvals.append(approval)
+        approvals_by_step[step.id] = approval
+
+    resume_step = _resume_step_for_resubmission(proposal, steps)
+    resume_order = resume_step.step_order if resume_step else None
+
+    for approval in proposal.approvals:
+        step_order = approval.step.step_order if approval.step else None
+        if (
+            resume_order is not None
+            and step_order is not None
+            and step_order < resume_order
+            and approval.status == 'approved'
+        ):
+            continue
+
+        approval.status = 'pending'
+        approval.remarks = None
+        approval.approved_at = None
+        approval.signed_name = None
+        approval.approved_by = None
+
+    proposal.status = 'PENDING'
+    proposal.current_step_id = resume_step.id if resume_step else None
+
+
 def _split_legacy_date_venue(value):
     if not value:
         return '', '', ''
@@ -123,7 +169,7 @@ def _normalize_proposal_form_data(form_data):
         normalized = form_data.to_dict()
         unsdg_goals = [value.strip() for value in form_data.getlist('unsdg_goals') if value.strip()]
     else:
-        normalized = dict(form_data or {})
+        normalized = normalize_proposal_data(form_data)
         raw_unsdg_goals = normalized.get('unsdg_goals', [])
         if isinstance(raw_unsdg_goals, list):
             unsdg_goals = [value.strip() for value in raw_unsdg_goals if isinstance(value, str) and value.strip()]
@@ -301,8 +347,6 @@ def org_home():
     pending = Proposal.query.filter_by(creator_id=current_user.id, status='PENDING').count()
     rejected = Proposal.query.filter_by(creator_id=current_user.id, status='REJECTED').count()
     approved = Proposal.query.filter_by(creator_id=current_user.id, status='APPROVED').count()
-    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
-    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
     
     return render_template(
         'org_home.html', 
@@ -310,12 +354,10 @@ def org_home():
         pending_count=pending, 
         rejected_count=rejected, 
         approved_count=approved,
-        notifications=notifications,
-        unread_notifications=unread_notifications,
     )
 
 
-@proposal_bp.route('/calendar')
+@proposal_bp.route('/org-calendar')
 @login_required
 def calendar_view():
     redirect_response = _require_org_account()
@@ -396,19 +438,7 @@ def create():
                     proposal_to_edit.file_path = filename
                 
                 proposal_to_edit.proposal_data = normalized_payload
-                proposal_to_edit.status = 'PENDING'
-                
-                # Reset any rejected steps to pending
-                DocumentApproval.query.filter_by(document_id=proposal_to_edit.id).update({
-                    "status": "pending",
-                    "remarks": None,
-                    "approved_at": None,
-                    "signed_name": None,
-                    "approved_by": None,
-                })
-                
-                first_step = ApprovalStep.query.order_by(ApprovalStep.step_order).first()
-                proposal_to_edit.current_step_id = first_step.id if first_step else None
+                _reset_proposal_for_resubmission(proposal_to_edit)
                 db.session.add(DocumentLog(
                     document_id=proposal_to_edit.id,
                     action="Proposal Revised and Resubmitted",
@@ -505,7 +535,7 @@ def resubmit(proposal_id):
         file.save(os.path.join(upload_path, new_filename))
         
         proposal.file_path = new_filename
-        proposal.status = 'PENDING'
+        _reset_proposal_for_resubmission(proposal)
         
         db.session.add(DocumentLog(document_id=proposal.id, action="Version Resubmitted", performed_by=current_user.id))
         db.session.commit()

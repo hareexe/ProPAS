@@ -70,7 +70,7 @@
       </div>
       <div class="calendar-toolbar">
         <a href="{{ url_for(calendar_endpoint, year=prev_year, month=prev_month) }}" class="calendar-nav-btn">Previous</a>
-        <div class="calendar-month-chip">{{ month_name }} {{ today.replace(year=prev_year if false else today.year) and '' }}{{ year }}</div>
+        <div class="calendar-month-chip">{{ month_name }} {{ year }}</div>
         <a href="{{ url_for(calendar_endpoint, year=next_year, month=next_month) }}" class="calendar-nav-btn">Next</a>
       </div>
     </div>

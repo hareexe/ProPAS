@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, abort
 from flask_login import login_required, current_user
-from models import db, User, Proposal, ApprovalStep, DocumentApproval, Notification, ProposalMessage
+from models import db, User, Proposal, ApprovalStep, DocumentApproval, ProposalMessage
 from utils import add_signature_page
-from utils import build_month_matrix, get_proposal_venue, parse_event_date
+from utils import build_month_matrix, get_proposal_venue, normalize_proposal_data, parse_event_date
 from datetime import datetime, date
 import calendar
 from sqlalchemy.orm.attributes import flag_modified
@@ -23,25 +23,80 @@ def _get_printed_name(user):
     return (profile.get('printed_name') or '').strip()
 
 
-def _create_notification(recipient_id, proposal_id, title, message, notification_type='info'):
-    db.session.add(Notification(
-        recipient_id=recipient_id,
+def _office_step_for_user(user):
+    return ApprovalStep.query.filter(ApprovalStep.name.ilike(user.username)).first()
+
+
+def _conversation_messages(proposal_id, office_step_id):
+    return ProposalMessage.query.filter_by(
         proposal_id=proposal_id,
-        title=title,
-        message=message,
-        notification_type=notification_type,
-    ))
+        office_step_id=office_step_id,
+    ).order_by(ProposalMessage.created_at.asc()).all()
 
 
-def _conversation_messages(proposal_id):
-    return ProposalMessage.query.filter_by(proposal_id=proposal_id).order_by(ProposalMessage.created_at.asc()).all()
+def _office_dashboard_items(step_id):
+    active_proposals = Proposal.query.filter_by(current_step_id=step_id).order_by(Proposal.created_at.desc()).all()
+    active_ids = {proposal.id for proposal in active_proposals}
+
+    message_rows = ProposalMessage.query.filter_by(office_step_id=step_id).order_by(ProposalMessage.created_at.desc()).all()
+    followup_ids = []
+    seen_ids = set()
+    for message in message_rows:
+        if message.proposal_id in active_ids or message.proposal_id in seen_ids:
+            continue
+        followup_ids.append(message.proposal_id)
+        seen_ids.add(message.proposal_id)
+
+    followup_proposals = []
+    if followup_ids:
+        proposals_by_id = {
+            proposal.id: proposal
+            for proposal in Proposal.query.filter(Proposal.id.in_(followup_ids)).all()
+        }
+        followup_proposals = [
+            proposals_by_id[proposal_id]
+            for proposal_id in followup_ids
+            if proposal_id in proposals_by_id
+        ]
+
+    dashboard_items = [{'proposal': proposal, 'mode': 'review'} for proposal in active_proposals]
+    dashboard_items.extend({'proposal': proposal, 'mode': 'chat'} for proposal in followup_proposals)
+    return dashboard_items
+
+
+def _next_pending_step(proposal, current_order):
+    remaining_steps = ApprovalStep.query.filter(
+        ApprovalStep.step_order > current_order
+    ).order_by(ApprovalStep.step_order.asc()).all()
+    approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
+
+    for step in remaining_steps:
+        approval = approvals_by_step.get(step.id)
+        if not approval or approval.status != 'approved':
+            return step
+
+    return None
+
+
+def _signed_roles_for_pdf(proposal, current_step_name=None, current_printed_name=None):
+    signed_roles = {}
+
+    for approval in proposal.approvals:
+        if not approval.step or approval.status != 'approved' or not approval.signed_name:
+            continue
+        signed_roles[approval.step.name.upper()] = approval.signed_name
+
+    if current_step_name and current_printed_name:
+        signed_roles[current_step_name.upper()] = current_printed_name
+
+    return signed_roles
 
 
 def _approved_calendar_events():
     events = []
     proposals = Proposal.query.filter_by(status='APPROVED').order_by(Proposal.created_at.desc()).all()
     for proposal in proposals:
-        proposal_data = proposal.proposal_data or {}
+        proposal_data = normalize_proposal_data(proposal.proposal_data)
         event_date = parse_event_date(proposal_data.get('event_date'))
         if not event_date:
             continue
@@ -88,50 +143,11 @@ def _calendar_month_context(events, year, month):
         'next_month': next_month,
     }
 
-
-def _notify_next_office_and_org(proposal, approving_step, next_step):
-    org_title = 'Proposal Approved'
-    if next_step:
-        org_message = (
-            f"Your proposal '{proposal.title}' was approved by {approving_step.name} "
-            f"and is now forwarded to {next_step.name}."
-        )
-    else:
-        org_message = f"Your proposal '{proposal.title}' was approved by {approving_step.name} and is now fully approved."
-
-    _create_notification(
-        recipient_id=proposal.creator_id,
-        proposal_id=proposal.id,
-        title=org_title,
-        message=org_message,
-        notification_type='success',
-    )
-
-    if not next_step:
-        return
-
-    office_accounts = User.query.filter(
-        User.account_type == 'Office',
-        User.username.ilike(next_step.name)
-    ).all()
-
-    for office_account in office_accounts:
-        _create_notification(
-            recipient_id=office_account.id,
-            proposal_id=proposal.id,
-            title='New Proposal Received',
-            message=(
-                f"Proposal '{proposal.title}' from {proposal.creator.username} was approved by "
-                f"{approving_step.name} and is now in your review queue."
-            ),
-            notification_type='info',
-        )
-
 @office_bp.route('/office-home', methods=['GET', 'POST'])
 @office_bp.route('/office-home/<int:review_id>', methods=['GET', 'POST'])
 @login_required
 def review(review_id=None):
-    my_step = ApprovalStep.query.filter(ApprovalStep.name.ilike(current_user.username)).first()
+    my_step = _office_step_for_user(current_user)
     
     if not my_step:
         flash("Account not linked to a valid approval step.", "danger")
@@ -160,11 +176,15 @@ def review(review_id=None):
             profile['printed_name'] = printed_name
             current_user.profile_data = profile
          
+            signed_roles = _signed_roles_for_pdf(
+                prop,
+                current_step_name=my_step.name,
+                current_printed_name=printed_name,
+            )
             success = add_signature_page(
-                current_app.config['UPLOAD_FOLDER'], 
-                prop.file_path, 
-                my_step.name.upper(), 
-                printed_name
+                current_app.config['UPLOAD_FOLDER'],
+                prop.file_path,
+                signed_roles,
             )
             
             if success:
@@ -174,9 +194,7 @@ def review(review_id=None):
                 current_approval.approved_at = datetime.utcnow()
                 current_approval.approved_by = current_user.id
 
-                next_s = ApprovalStep.query.filter(
-                    ApprovalStep.step_order > my_step.step_order
-                ).order_by(ApprovalStep.step_order.asc()).first()
+                next_s = _next_pending_step(prop, my_step.step_order)
 
                 if next_s:
                     prop.current_step_id = next_s.id
@@ -184,8 +202,6 @@ def review(review_id=None):
                     prop.status = 'APPROVED'
                     prop.current_step_id = None
 
-                _notify_next_office_and_org(prop, my_step, next_s)
-                
                 flash(f"Proposal '{prop.title}' signed and forwarded.", "success")
             else:
                 flash("Failed to generate PDF signature. Please check file permissions.", "danger")
@@ -194,6 +210,7 @@ def review(review_id=None):
 
             current_approval.status = 'rejected'
             current_approval.remarks = remarks
+            current_approval.approved_at = datetime.utcnow()
             prop.status = 'REJECTED'
    
             prop.current_step_id = None 
@@ -202,26 +219,22 @@ def review(review_id=None):
         db.session.commit()
         return redirect(url_for('office.review'))
  
-    proposals = Proposal.query.filter_by(current_step_id=my_step.id).all()
-    notifications = Notification.query.filter_by(recipient_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
-    unread_notifications = Notification.query.filter_by(recipient_id=current_user.id, is_read=False).count()
+    dashboard_items = _office_dashboard_items(my_step.id)
     selected = db.session.get(Proposal, review_id) if review_id else None
-    selected_messages = _conversation_messages(selected.id) if selected else []
+    selected_messages = _conversation_messages(selected.id, my_step.id) if selected else []
     active_tab = request.args.get('tab', 'overview')
     if active_tab not in {'overview', 'chat'}:
         active_tab = 'overview'
 
     return render_template(
         'office_home.html', 
-        proposals=proposals, 
+        dashboard_items=dashboard_items,
         selected_proposal=selected,
         selected_messages=selected_messages,
         active_tab=active_tab,
         username=current_user.username,
-        pending_count=len(proposals),
+        pending_count=len(dashboard_items),
         printed_name=_get_printed_name(current_user),
-        notifications=notifications,
-        unread_notifications=unread_notifications,
     )
 
 @office_bp.route('/office-profile', methods=['POST'])
@@ -252,6 +265,10 @@ def send_message(proposal_id):
     if current_user.account_type != 'Office':
         abort(403)
 
+    my_step = _office_step_for_user(current_user)
+    if not my_step:
+        abort(403)
+
     proposal = db.session.get(Proposal, proposal_id)
     if not proposal:
         abort(404)
@@ -262,17 +279,11 @@ def send_message(proposal_id):
     else:
         db.session.add(ProposalMessage(
             proposal_id=proposal.id,
+            office_step_id=my_step.id,
             sender_id=current_user.id,
             sender_role=current_user.account_type,
             body=body,
         ))
-        _create_notification(
-            recipient_id=proposal.creator_id,
-            proposal_id=proposal.id,
-            title='New Office Message',
-            message=f"{current_user.username} sent a message about proposal '{proposal.title}'.",
-            notification_type='info',
-        )
         db.session.commit()
         flash('Your message was added to the conversation.', 'success')
 
@@ -332,7 +343,7 @@ def master_history():
     )
 
 
-@office_bp.route('/calendar')
+@office_bp.route('/office-calendar')
 @login_required
 def calendar_view():
     if current_user.account_type != 'Office':
@@ -369,6 +380,10 @@ def proposal_details(proposal_id):
     if current_user.account_type != 'Office':
         abort(403)
 
+    my_step = _office_step_for_user(current_user)
+    if not my_step:
+        abort(403)
+
     proposal = db.session.get(Proposal, proposal_id)
     if not proposal:
         abort(404)
@@ -377,7 +392,7 @@ def proposal_details(proposal_id):
     if proposal.current_step_id:
         current_step = db.session.get(ApprovalStep, proposal.current_step_id)
         current_step_name = current_step.name if current_step else None
-    messages = _conversation_messages(proposal.id)
+    messages = _conversation_messages(proposal.id, my_step.id)
     active_tab = request.args.get('tab', 'overview')
     if active_tab not in {'overview', 'chat'}:
         active_tab = 'overview'

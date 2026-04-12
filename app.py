@@ -5,7 +5,9 @@ from zoneinfo import ZoneInfo
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
-from models import db, ApprovalStep
+from models import db, ApprovalStep, Proposal, ProposalMessage
+from sqlalchemy import inspect, text
+from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
 
@@ -93,9 +95,84 @@ def init_admin_account():
         print("Admin account was not created because ADMIN_PASSWORD is not set.")
 
 
+def _message_step_for_timestamp(proposal, steps, timestamp):
+    if not steps:
+        return None
+
+    approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
+    active_step = steps[0]
+    last_acted_step = None
+
+    for index, step in enumerate(steps):
+        approval = approvals_by_step.get(step.id)
+        if not approval:
+            break
+
+        if approval.status == 'approved' and approval.approved_at and approval.approved_at <= timestamp:
+            last_acted_step = step
+            if index + 1 < len(steps):
+                active_step = steps[index + 1]
+            continue
+
+        if approval.status == 'rejected':
+            event_time = approval.approved_at or proposal.created_at
+            if event_time and event_time <= timestamp:
+                return step
+
+        break
+
+    return active_step or last_acted_step
+
+
+def ensure_message_thread_schema():
+    inspector = inspect(db.engine)
+    message_columns = {column['name'] for column in inspector.get_columns('proposal_messages')}
+    if 'office_step_id' not in message_columns:
+        db.session.execute(text('ALTER TABLE proposal_messages ADD COLUMN office_step_id INTEGER'))
+        db.session.commit()
+
+    messages_without_step = ProposalMessage.query.filter(ProposalMessage.office_step_id.is_(None)).all()
+    if not messages_without_step:
+        return
+
+    proposals = Proposal.query.options(
+        joinedload(Proposal.approvals)
+    ).filter(
+        Proposal.id.in_({message.proposal_id for message in messages_without_step})
+    ).all()
+    proposal_map = {proposal.id: proposal for proposal in proposals}
+    steps = ApprovalStep.query.order_by(ApprovalStep.step_order.asc()).all()
+
+    updated = False
+    for message in messages_without_step:
+        proposal = proposal_map.get(message.proposal_id)
+        if not proposal:
+            continue
+
+        step = _message_step_for_timestamp(proposal, steps, message.created_at or proposal.created_at)
+        if not step:
+            continue
+
+        message.office_step_id = step.id
+        updated = True
+
+    if updated:
+        db.session.commit()
+
+
+def drop_obsolete_tables():
+    inspector = inspect(db.engine)
+    table_names = set(inspector.get_table_names())
+    if 'notifications' in table_names:
+        db.session.execute(text('DROP TABLE notifications'))
+        db.session.commit()
+
+
 with app.app_context():
     db.create_all()
     init_approval_steps()
+    ensure_message_thread_schema()
+    drop_obsolete_tables()
     init_admin_account()
 
 if __name__ == '__main__':
