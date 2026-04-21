@@ -2,12 +2,13 @@ import os
 import re
 import json
 import calendar
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, current_app, abort
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from models import db, Proposal, ApprovalStep, DocumentApproval, DocumentLog
-from utils import build_month_matrix, get_proposal_venue, normalize_proposal_data, parse_event_date
+from utils import build_month_matrix, get_proposal_venue, normalize_proposal_data, parse_event_date, proposal_needs_budget
+from storage import storage
 
 # Define the Blueprint - Only for Organization/Student tasks
 proposal_bp = Blueprint('proposal', __name__)
@@ -39,6 +40,8 @@ SDG_OPTIONS = [
     {'value': 'SDG 17: Partnerships for the Goals', 'label': 'SDG 17: Partnerships for the Goals'},
 ]
 
+TIME_PATTERN = re.compile(r'^\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?\s*$', re.IGNORECASE)
+
 REQUIRED_PROPOSAL_FIELDS = {
     'title': 'Project title',
     'sponsor': 'Sponsor / organization',
@@ -49,7 +52,6 @@ REQUIRED_PROPOSAL_FIELDS = {
     'approach_list': 'Approach / process',
     'objectives_list': 'Objectives',
     'expected_outcome': 'Expected outcomes',
-    'funding_source': 'Source of funding',
     'signatory_ProjPresident': 'Org president / project coordinator',
     'signatory_adviser': 'Person in-charge / adviser',
     'signatory_dept_head': 'Department / program head',
@@ -94,30 +96,50 @@ def _next_proposal_sequence(user_id, username):
 
     return highest_sequence + 1
 
-def _build_proposal_filename(username, sequence, version=None):
-    base_name = f"{_proposal_prefix(username)}{sequence}"
+def _build_proposal_filename(username, proposal_id, version=None):
+    base_name = f"{_proposal_prefix(username)}{proposal_id}"
     if version and version > 1:
         base_name = f"{base_name}_v{version}"
     return f"{base_name}.pdf"
 
 
-def _build_supporting_filename(username, sequence, original_filename, version=None):
+def _build_supporting_filename(username, proposal_id, original_filename, version=None):
     extension = os.path.splitext(secure_filename(original_filename or ''))[1].lower() or '.bin'
-    base_name = f"{_proposal_prefix(username)}{sequence}_support"
+    base_name = f"{_proposal_prefix(username)}{proposal_id}_support"
     if version and version > 1:
         base_name = f"{base_name}_v{version}"
     return f"{base_name}{extension}"
 
 
-def _resume_step_for_resubmission(proposal, steps):
-    approvals_by_step = {approval.step_id: approval for approval in proposal.approvals}
+def _ensure_approval_for_step(proposal, step):
+    approval = next((item for item in proposal.approvals if item.step_id == step.id), None)
+    if approval is None:
+        approval = DocumentApproval(document_id=proposal.id, step_id=step.id, status='pending')
+        db.session.add(approval)
+        proposal.approvals.append(approval)
+    return approval
 
-    for step in steps:
-        approval = approvals_by_step.get(step.id)
-        if not approval or approval.status != 'approved':
-            return step
 
-    return None
+def _apply_budget_workflow_rules(proposal):
+    finance_step = ApprovalStep.query.filter(ApprovalStep.name.ilike('FINANCE')).first()
+    if not finance_step:
+        return
+
+    finance_approval = _ensure_approval_for_step(proposal, finance_step)
+    if proposal_needs_budget(proposal.proposal_data):
+        if finance_approval.signed_name or finance_approval.approved_by:
+            return
+        finance_approval.status = 'pending'
+        if finance_approval.remarks == 'Skipped automatically: no budget required.':
+            finance_approval.remarks = None
+        finance_approval.approved_at = None
+        return
+
+    finance_approval.status = 'approved'
+    finance_approval.remarks = 'Skipped automatically: no budget required.'
+    finance_approval.approved_at = None
+    finance_approval.signed_name = None
+    finance_approval.approved_by = None
 
 
 def _reset_proposal_for_resubmission(proposal):
@@ -132,27 +154,17 @@ def _reset_proposal_for_resubmission(proposal):
         proposal.approvals.append(approval)
         approvals_by_step[step.id] = approval
 
-    resume_step = _resume_step_for_resubmission(proposal, steps)
-    resume_order = resume_step.step_order if resume_step else None
-
     for approval in proposal.approvals:
-        step_order = approval.step.step_order if approval.step else None
-        if (
-            resume_order is not None
-            and step_order is not None
-            and step_order < resume_order
-            and approval.status == 'approved'
-        ):
-            continue
-
         approval.status = 'pending'
         approval.remarks = None
         approval.approved_at = None
         approval.signed_name = None
         approval.approved_by = None
 
+    _apply_budget_workflow_rules(proposal)
+
     proposal.status = 'PENDING'
-    proposal.current_step_id = resume_step.id if resume_step else None
+    proposal.current_step_id = steps[0].id if steps else None
 
 
 def _split_legacy_date_venue(value):
@@ -170,6 +182,69 @@ def _split_legacy_date_venue(value):
         return event_date, venue, ''
 
     return event_date, 'Others', venue
+
+
+def _normalize_time_value(value):
+    raw = str(value or '').strip()
+    if not raw:
+        return ''
+
+    exact_match = re.fullmatch(r'(\d{2}):(\d{2})', raw)
+    if exact_match:
+        hours = int(exact_match.group(1))
+        minutes = int(exact_match.group(2))
+        if 0 <= hours <= 23 and 0 <= minutes <= 59:
+            return f'{hours:02d}:{minutes:02d}'
+        return ''
+
+    match = TIME_PATTERN.match(raw)
+    if not match:
+        return ''
+
+    hours = int(match.group(1))
+    minutes = int(match.group(2) or '0')
+    meridiem = (match.group(3) or '').upper()
+
+    if meridiem:
+        if not (1 <= hours <= 12 and 0 <= minutes <= 59):
+            return ''
+        if meridiem == 'AM':
+            hours = 0 if hours == 12 else hours
+        else:
+            hours = 12 if hours == 12 else hours + 12
+    elif not (0 <= hours <= 23 and 0 <= minutes <= 59):
+        return ''
+
+    return f'{hours:02d}:{minutes:02d}'
+
+
+def _extract_time_range(value):
+    raw = str(value or '').strip()
+    if not raw:
+        return '', ''
+
+    parts = re.split(r'\s*(?:-|–|—|to)\s*', raw, maxsplit=1, flags=re.IGNORECASE)
+    if len(parts) != 2:
+        return '', ''
+
+    return _normalize_time_value(parts[0]), _normalize_time_value(parts[1])
+
+
+def _format_time_label(value):
+    normalized = _normalize_time_value(value)
+    if not normalized:
+        return ''
+
+    time_value = datetime.strptime(normalized, '%H:%M')
+    return time_value.strftime('%I:%M %p').lstrip('0')
+
+
+def _format_time_range(start_time, end_time, fallback=''):
+    normalized_start = _normalize_time_value(start_time)
+    normalized_end = _normalize_time_value(end_time)
+    if normalized_start and normalized_end:
+        return f'{_format_time_label(normalized_start)} - {_format_time_label(normalized_end)}'
+    return str(fallback or '').strip()
 
 
 def _normalize_proposal_form_data(form_data):
@@ -207,6 +282,11 @@ def _normalize_proposal_form_data(form_data):
 
     normalized['unsdg_goals'] = unsdg_goals
     normalized['unsdg'] = ', '.join(unsdg_goals)
+    normalized['needs_budget'] = 'yes' if proposal_needs_budget(normalized) else 'no'
+
+    approach_items = _extract_approach_items(normalized)
+    normalized['approach_items'] = approach_items
+    normalized['approach_list'] = _serialize_approach_items(approach_items) if approach_items else (normalized.get('approach_list') or '').strip()
 
     return normalized
 
@@ -245,9 +325,114 @@ def _extract_budget_items(form_data):
     return normalized_items
 
 
+def _parse_json_list(raw_value):
+    if isinstance(raw_value, list):
+        return raw_value
+
+    if isinstance(raw_value, str):
+        raw_value = raw_value.strip()
+        if not raw_value:
+            return []
+        try:
+            parsed = json.loads(raw_value)
+        except json.JSONDecodeError:
+            return []
+        return parsed if isinstance(parsed, list) else []
+
+    return []
+
+
+def _legacy_approach_items(raw_value):
+    raw_value = str(raw_value or '').strip()
+    if not raw_value:
+        return []
+
+    items = []
+    for line in raw_value.splitlines():
+        text = line.strip()
+        if not text:
+            continue
+
+        parts = [part.strip() for part in text.split('|', 2)]
+        if len(parts) == 3:
+            time_value, activity, remarks = parts
+        elif len(parts) == 2:
+            time_value, activity = parts
+            remarks = ''
+        else:
+            time_value, activity, remarks = '', '', text
+
+        start_time, end_time = _extract_time_range(time_value)
+        items.append({
+            'time': _format_time_range(start_time, end_time, time_value),
+            'start_time': start_time,
+            'end_time': end_time,
+            'activity': activity,
+            'remarks': remarks,
+        })
+
+    return items
+
+
+def _extract_approach_items(form_data):
+    raw_approach_items = ''
+    if hasattr(form_data, 'get'):
+        raw_approach_items = form_data.get('approach_items', '')
+    elif isinstance(form_data, dict):
+        raw_approach_items = form_data.get('approach_items', '')
+
+    items = _parse_json_list(raw_approach_items)
+
+    if not items:
+        if hasattr(form_data, 'get'):
+            items = _legacy_approach_items(form_data.get('approach_list', ''))
+        elif isinstance(form_data, dict):
+            items = _legacy_approach_items(form_data.get('approach_list', ''))
+
+    normalized_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        time_value = str(item.get('time') or '').strip()
+        start_time = _normalize_time_value(item.get('start_time'))
+        end_time = _normalize_time_value(item.get('end_time'))
+        if not (start_time and end_time) and time_value:
+            legacy_start, legacy_end = _extract_time_range(time_value)
+            start_time = start_time or legacy_start
+            end_time = end_time or legacy_end
+
+        activity = str(item.get('activity') or '').strip()
+        remarks = str(item.get('remarks') or '').strip()
+        time_label = _format_time_range(start_time, end_time, time_value)
+
+        if time_label or activity or remarks:
+            normalized_items.append({
+                'time': time_label,
+                'start_time': start_time,
+                'end_time': end_time,
+                'activity': activity,
+                'remarks': remarks,
+            })
+
+    return normalized_items
+
+
+def _serialize_approach_items(approach_items):
+    lines = []
+    for item in approach_items:
+        time_value = _format_time_range(item.get('start_time'), item.get('end_time'), item.get('time'))
+        activity = ' '.join(str(item.get('activity') or '').split())
+        remarks = ' '.join(str(item.get('remarks') or '').split())
+        lines.append(f'{time_value} | {activity} | {remarks}'.strip())
+    return '\n'.join(line for line in lines if line)
+
+
 def _validate_proposal_payload(form_data, file_storage=None):
     normalized_data = _normalize_proposal_form_data(form_data)
     budget_items = _extract_budget_items(form_data)
+    approach_items = _extract_approach_items(form_data)
+    needs_budget = proposal_needs_budget(normalized_data)
 
     for field_name, label in REQUIRED_PROPOSAL_FIELDS.items():
         value = (form_data.get(field_name) or '').strip()
@@ -260,41 +445,67 @@ def _validate_proposal_payload(form_data, file_storage=None):
     if not normalized_data.get('unsdg_goals'):
         return None, 'Select at least one UNSDG target.'
 
-    budget_value = (form_data.get('budget') or '').strip()
-    try:
-        budget_amount = float(budget_value)
-    except ValueError:
-        return None, 'Proposed budget must be a valid amount.'
+    if not approach_items:
+        return None, 'Add at least one approach schedule row.'
 
-    if budget_amount <= 0:
-        return None, 'Proposed budget must be greater than zero.'
+    for item in approach_items:
+        if not item.get('start_time'):
+            return None, 'Every approach row needs a start time.'
+        if not item.get('end_time'):
+            return None, 'Every approach row needs an end time.'
+        if item['start_time'] >= item['end_time']:
+            return None, 'Every approach row must end after it starts.'
+        if not item['activity']:
+            return None, 'Every approach row needs an activity.'
+        if not item['remarks']:
+            return None, 'Every approach row needs a description or remarks entry.'
 
-    if not budget_items:
-        return None, 'Add at least one budget item.'
+    if needs_budget:
+        funding_source = (form_data.get('funding_source') or '').strip()
+        if not funding_source:
+            return None, 'Source of funding is required when a budget is needed.'
 
-    for item in budget_items:
-        if not item['description']:
-            return None, 'Every budget item needs a description.'
-        if item['quantity'] <= 0:
-            return None, 'Every budget item quantity must be greater than zero.'
-        if item['unit_cost'] < 0:
-            return None, 'Budget item unit cost cannot be negative.'
+        budget_value = (form_data.get('budget') or '').strip()
+        try:
+            budget_amount = float(budget_value)
+        except ValueError:
+            return None, 'Proposed budget must be a valid amount.'
+
+        if budget_amount <= 0:
+            return None, 'Proposed budget must be greater than zero.'
+
+        if not budget_items:
+            return None, 'Add at least one budget item.'
+
+        for item in budget_items:
+            if not item['description']:
+                return None, 'Every budget item needs a description.'
+            if item['quantity'] <= 0:
+                return None, 'Every budget item quantity must be greater than zero.'
+            if item['unit_cost'] < 0:
+                return None, 'Budget item unit cost cannot be negative.'
+    else:
+        budget_amount = 0
+        budget_items = []
+        normalized_data['funding_source'] = ''
 
     if file_storage is not None and (not file_storage or file_storage.filename == ''):
         return None, 'Proposal PDF generation failed. Please try again.'
 
     normalized_data['budget'] = budget_amount
     normalized_data['budget_items'] = budget_items
+    normalized_data['approach_items'] = approach_items
+    normalized_data['approach_list'] = _serialize_approach_items(approach_items)
     return normalized_data, None
 
 
-def _save_supporting_document(file_storage, upload_path, username, sequence, version=None):
+def _save_supporting_document(file_storage, username, proposal_id, version=None):
     if not file_storage or file_storage.filename == '':
         return None, None
 
     original_name = secure_filename(file_storage.filename)
-    supporting_filename = _build_supporting_filename(username, sequence, original_name, version=version)
-    file_storage.save(os.path.join(upload_path, supporting_filename))
+    supporting_filename = _build_supporting_filename(username, proposal_id, original_name, version=version)
+    storage.save_upload(file_storage, supporting_filename)
     return supporting_filename, original_name
 
 
@@ -434,40 +645,28 @@ def create():
 
             # 1. HANDLE FILE UPLOAD
             filename = proposal_to_edit.file_path if proposal_to_edit else None
-            upload_path = os.path.join(current_app.root_path, current_app.config['UPLOAD_FOLDER'])
-            os.makedirs(upload_path, exist_ok=True)
-
             # 2. SAVE OR UPDATE
             if proposal_to_edit:
                 proposal_to_edit.title = title
                 proposal_to_edit.version_number += 1
                 if file and file.filename != '':
-                    existing_sequence = _extract_proposal_sequence(proposal_to_edit.file_path, current_user.username)
-                    if not existing_sequence:
-                        existing_sequence = _fallback_proposal_sequence(proposal_to_edit)
-
                     filename = _build_proposal_filename(
                         current_user.username,
-                        existing_sequence,
+                        proposal_to_edit.id,
                         proposal_to_edit.version_number
                     )
-                    file.save(os.path.join(upload_path, filename))
+                    storage.save_upload(file, filename)
 
                 if filename:
                     proposal_to_edit.file_path = filename
-
-                existing_sequence = _extract_proposal_sequence(proposal_to_edit.file_path, current_user.username)
-                if not existing_sequence:
-                    existing_sequence = _fallback_proposal_sequence(proposal_to_edit)
 
                 supporting_path = proposal_to_edit.proposal_data.get('supporting_document_path') if proposal_to_edit.proposal_data else None
                 supporting_name = proposal_to_edit.proposal_data.get('supporting_document_name') if proposal_to_edit.proposal_data else None
                 if supporting_file and supporting_file.filename != '':
                     supporting_path, supporting_name = _save_supporting_document(
                         supporting_file,
-                        upload_path,
                         current_user.username,
-                        existing_sequence,
+                        proposal_to_edit.id,
                         version=proposal_to_edit.version_number,
                     )
 
@@ -495,19 +694,15 @@ def create():
                 db.session.flush()
 
                 if file and file.filename != '':
-                    next_sequence = _next_proposal_sequence(current_user.id, current_user.username)
-                    filename = _build_proposal_filename(current_user.username, next_sequence)
-                    file.save(os.path.join(upload_path, filename))
+                    filename = _build_proposal_filename(current_user.username, new_prop.id)
+                    storage.save_upload(file, filename)
                     new_prop.file_path = filename
-                else:
-                    next_sequence = _next_proposal_sequence(current_user.id, current_user.username)
 
                 if supporting_file and supporting_file.filename != '':
                     supporting_path, supporting_name = _save_supporting_document(
                         supporting_file,
-                        upload_path,
                         current_user.username,
-                        next_sequence,
+                        new_prop.id,
                     )
                     normalized_payload['supporting_document_path'] = supporting_path
                     normalized_payload['supporting_document_name'] = supporting_name
@@ -515,6 +710,7 @@ def create():
                 
                 for step in steps:
                     db.session.add(DocumentApproval(document_id=new_prop.id, step_id=step.id, status='pending'))
+                _apply_budget_workflow_rules(new_prop)
                 db.session.add(DocumentLog(
                     document_id=new_prop.id,
                     action="Proposal Created",
@@ -574,15 +770,9 @@ def resubmit(proposal_id):
     file = request.files.get('file')
     if file and file.filename != '':
         proposal.version_number += 1
-        upload_path = os.path.join(current_app.root_path, current_app.config['UPLOAD_FOLDER'])
-        os.makedirs(upload_path, exist_ok=True)
 
-        sequence = _extract_proposal_sequence(proposal.file_path, current_user.username)
-        if not sequence:
-            sequence = _fallback_proposal_sequence(proposal)
-
-        new_filename = _build_proposal_filename(current_user.username, sequence, proposal.version_number)
-        file.save(os.path.join(upload_path, new_filename))
+        new_filename = _build_proposal_filename(current_user.username, proposal.id, proposal.version_number)
+        storage.save_upload(file, new_filename)
         
         proposal.file_path = new_filename
         _reset_proposal_for_resubmission(proposal)

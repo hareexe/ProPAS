@@ -159,7 +159,7 @@
                   {% if current_user.account_type == 'Office' %}
                   <a href="{{ url_for('office.proposal_details', proposal_id=prop.id) }}" class="btn-view">View Details</a>
                   {% else %}
-                  <button class="btn-view">View Details</button>
+                  <a href="{{ url_for('auth.view_status', proposal_id=prop.id) }}" class="btn-view">View Details</a>
                   {% endif %}
                 {% endif %}
               </div>

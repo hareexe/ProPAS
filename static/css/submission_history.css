@@ -91,6 +91,7 @@
         top: 0;
         z-index: 20;
         background: rgba(240,244,248,0.95);
+        -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border);
         overflow-x: auto;

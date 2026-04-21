@@ -130,7 +130,7 @@
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="mb-6">
                     <h2 class="text-xl font-semibold">Proposal Management</h2>
-                    <p class="mt-1 text-sm text-slate-500">Use this if a proposal gets stuck or the approval flow needs to be restarted from the first office.</p>
+                    <p class="mt-1 text-sm text-slate-500">Use this if a proposal gets stuck, needs a manual office-stage update after an outage, or the approval flow needs to be restarted from the first office.</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200">
@@ -158,6 +158,20 @@
                                 </td>
                                 <td class="px-4 py-4 align-top text-sm text-slate-700">{{ step_name_map.get(proposal.current_step_id, 'Completed / Not Assigned') }}</td>
                                 <td class="px-4 py-4 align-top">
+                                    <form method="POST" action="{{ url_for('admin.override_proposal_step', proposal_id=proposal.id) }}" class="space-y-3 mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div>
+                                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Manual Current Office</label>
+                                            <select name="step_id" class="w-full min-w-[220px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                                                <option value="">Select office</option>
+                                                {% for step in approval_steps %}
+                                                <option value="{{ step.id }}" {% if proposal.current_step_id == step.id %}selected{% endif %}>{{ step.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <textarea name="admin_notes" rows="2" placeholder="Optional note for manual office update" class="w-full min-w-[220px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></textarea>
+                                        <button type="submit" class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100">Update Current Office</button>
+                                    </form>
                                     <form method="POST" action="{{ url_for('admin.restart_proposal', proposal_id=proposal.id) }}" class="space-y-3">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <textarea name="admin_notes" rows="2" placeholder="Optional admin note" class="w-full min-w-[220px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"></textarea>

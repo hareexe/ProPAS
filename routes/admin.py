@@ -34,6 +34,11 @@ def _restart_proposal_workflow(proposal):
     proposal.current_step_id = steps[0].id
 
 
+def _set_proposal_current_step(proposal, step):
+    proposal.status = 'PENDING'
+    proposal.current_step_id = step.id if step else None
+
+
 @admin_bp.route('/admin')
 @login_required
 def dashboard():
@@ -144,4 +149,38 @@ def restart_proposal(proposal_id):
     db.session.commit()
 
     flash(f"Approval workflow restarted for proposal '{proposal.title}'.", 'admin-success')
+    return redirect(url_for('admin.dashboard', tab='proposals'))
+
+
+@admin_bp.route('/admin/proposals/<int:proposal_id>/override-step', methods=['POST'])
+@login_required
+def override_proposal_step(proposal_id):
+    _require_admin()
+
+    proposal = db.session.get(Proposal, proposal_id)
+    if not proposal:
+        abort(404)
+
+    step_id = request.form.get('step_id', type=int)
+    if not step_id:
+        flash('Select the office where the paper is currently assigned.', 'admin-danger')
+        return redirect(url_for('admin.dashboard', tab='proposals'))
+
+    step = db.session.get(ApprovalStep, step_id)
+    if not step:
+        flash('Selected office step was not found.', 'admin-danger')
+        return redirect(url_for('admin.dashboard', tab='proposals'))
+
+    previous_step_name = proposal.current_step.name if getattr(proposal, 'current_step', None) else 'Completed / Not Assigned'
+    _set_proposal_current_step(proposal, step)
+
+    db.session.add(DocumentLog(
+        document_id=proposal.id,
+        action='Current Office Overridden by Admin',
+        performed_by=current_user.id,
+        notes=request.form.get('admin_notes') or f'Manually moved from {previous_step_name} to {step.name}.'
+    ))
+    db.session.commit()
+
+    flash(f"Current office for proposal '{proposal.title}' updated to {step.name}.", 'admin-success')
     return redirect(url_for('admin.dashboard', tab='proposals'))

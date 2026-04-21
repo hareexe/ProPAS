@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, current_user, login_required 
 from werkzeug.security import check_password_hash
 from models import db, User, Proposal, ApprovalStep, DocumentApproval, ProposalMessage
+from utils import normalize_proposal_data, proposal_needs_budget
+from storage import storage
 auth_bp = Blueprint('auth', __name__)
 
 OFFICE_DISPLAY_NAMES = {
@@ -54,6 +56,27 @@ def _office_accounts_for_conversation(proposal):
         User.username.ilike(office_step.name)
     ).all()
     return office_accounts, office_step
+
+
+def _signed_roles_for_preview(proposal):
+    signed_roles = {}
+    for approval in proposal.approvals:
+        if not approval.step or approval.status != 'approved' or not approval.signed_name:
+            continue
+        signed_roles[approval.step.name.upper()] = approval.signed_name
+    return signed_roles
+
+
+def _should_use_generated_preview(file_path):
+    if not file_path:
+        return True
+
+    try:
+        pdf_bytes = storage.read_bytes(file_path)
+    except Exception:
+        return True
+
+    return len(pdf_bytes) < 20_000
 
 
 def _conversation_messages(proposal_id, office_step_id):
@@ -139,6 +162,7 @@ def view_status(proposal_id):
 
     steps = ApprovalStep.query.order_by(ApprovalStep.step_order).all()
     approvals_by_step = {approval.step_id: approval for approval in selected_proposal.approvals}
+    needs_budget = proposal_needs_budget(selected_proposal.proposal_data)
 
     tracker_steps = []
     approved_step_count = 0
@@ -147,6 +171,19 @@ def view_status(proposal_id):
     rejection_remarks = None
 
     for step in steps:
+        step_name = step.name.strip().upper()
+        if step_name == 'FINANCE' and not needs_budget:
+            tracker_steps.append({
+                'name': _display_step_name(step.name),
+                'state': 'complete',
+                'remarks': 'Skipped because this proposal does not require a budget.',
+                'signed_name': None,
+                'approved_at': None,
+                'status_label': 'Skipped',
+            })
+            approved_step_count += 1
+            continue
+
         approval = approvals_by_step.get(step.id)
         approval_status = approval.status if approval else 'pending'
         step_label = _display_step_name(step.name)
@@ -172,6 +209,7 @@ def view_status(proposal_id):
             'remarks': approval.remarks if approval and approval.remarks else None,
             'signed_name': approval.signed_name if approval and approval.signed_name else None,
             'approved_at': approval.approved_at if approval else None,
+            'status_label': 'Approved' if state == 'complete' else ('In Review' if state == 'current' else ('Returned' if state == 'rejected' else 'Waiting')),
         })
 
     total_steps = len(steps) or 1
@@ -185,10 +223,17 @@ def view_status(proposal_id):
     else:
         status_summary = f"Currently under review by {current_office or 'the next office'}."
 
+    proposal_preview_data = normalize_proposal_data(selected_proposal.proposal_data) if selected_proposal else None
+    if proposal_preview_data is not None:
+        proposal_preview_data = dict(proposal_preview_data)
+        proposal_preview_data['signed_roles'] = _signed_roles_for_preview(selected_proposal)
+        proposal_preview_data['title'] = selected_proposal.title
+
     return render_template(
         'org_home.html',
         proposals=proposals,
         selected_proposal=selected_proposal,
+        proposal_preview_data=proposal_preview_data,
         tracker_steps=tracker_steps,
         progress_percent=progress_percent,
         status_summary=status_summary,
@@ -201,6 +246,7 @@ def view_status(proposal_id):
         messages=messages,
         conversation_office=office_step.name if office_step else None,
         active_tab=active_tab,
+        use_generated_preview=_should_use_generated_preview(selected_proposal.file_path),
     )
 
 @auth_bp.route('/logout')

@@ -37,6 +37,7 @@ class Proposal(db.Model):
     current_step_id = db.Column(db.Integer, db.ForeignKey('approval_steps.id'))
     creator_id = db.Column(db.Integer, db.ForeignKey('accounts.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    current_step = db.relationship('ApprovalStep', foreign_keys=[current_step_id])
 
 
 # ---------------- APPROVAL STEPS ----------------

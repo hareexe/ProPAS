@@ -180,15 +180,7 @@
           <div class="step-counter">{{ loop.index }}</div>
           <div class="step-name">{{ step.name }}</div>
           <div class="step-caption">
-            {% if step.state == 'complete' %}
-              Approved
-            {% elif step.state == 'current' %}
-              In Review
-            {% elif step.state == 'rejected' %}
-              Returned
-            {% else %}
-              Waiting
-            {% endif %}
+            {{ step.status_label or 'Waiting' }}
           </div>
         </div>
         {% endfor %}
@@ -201,13 +193,7 @@
             <div>
               <p class="feedback-card__office">{{ step.name }}</p>
               <p class="feedback-card__status">
-                {% if step.state == 'complete' %}
-                  Approved
-                {% elif step.state == 'rejected' %}
-                  Returned
-                {% else %}
-                  In Review
-                {% endif %}
+                {{ step.status_label or 'In Review' }}
               </p>
             </div>
             <div class="feedback-card__meta">
@@ -282,23 +268,41 @@
             {% if selected_proposal.proposal_data and selected_proposal.proposal_data.get('supporting_document_path') %}
             <p class="status-panel__meta">
               Supporting document:
-              <a href="{{ url_for('static', filename='uploads/' + selected_proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer">
+              <a href="{{ url_for('serve_file', filename=selected_proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer">
                 {{ selected_proposal.proposal_data.get('supporting_document_name', 'Open attachment') }}
               </a>
             </p>
             {% endif %}
           </div>
           <div class="status-pdf__actions">
-            <a href="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}" download class="btn-new">Download PDF</a>
-            <a href="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer" class="btn-view">Open in New Tab</a>
+            {% if use_generated_preview %}
+            <a href="{{ url_for('download_proposal_pdf', proposal_id=selected_proposal.id) }}" class="btn-new">Download PDF</a>
+            <a href="{{ url_for('serve_file', filename=selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer" class="btn-view">Open Stored File</a>
+            {% else %}
+            <a href="{{ url_for('download_proposal_pdf', proposal_id=selected_proposal.id) }}" class="btn-new">Download PDF</a>
+            <a href="{{ url_for('serve_file', filename=selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer" class="btn-view">Open in New Tab</a>
+            {% endif %}
           </div>
         </div>
         <div class="status-pdf__frame">
-          <iframe
-            src="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}#toolbar=1&navpanes=0&scrollbar=1&view=FitH"
+          {% if use_generated_preview %}
+          <div
+            id="proposalViewer"
             class="status-pdf__iframe"
-            title="Proposal PDF Viewer">
+            style="overflow:auto; background:#e8e4de; padding:24px 0;">
+            <div style="font-family:sans-serif; padding:32px; color:#64748b;">Loading reconstructed proposal preview...</div>
+          </div>
+          {% else %}
+          <iframe
+            title="Proposal PDF Preview"
+            class="status-pdf__iframe"
+            src="{{ url_for('serve_file', filename=selected_proposal.file_path) }}#toolbar=1&navpanes=0&view=FitH">
+            <p style="font-family:sans-serif; padding:32px; color:#64748b;">
+              PDF preview is unavailable in this browser.
+              <a href="{{ url_for('serve_file', filename=selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer">Open the file in a new tab</a>.
+            </p>
           </iframe>
+          {% endif %}
         </div>
       </section>
       {% endif %}
@@ -403,5 +407,13 @@
   </main>
 </div>
 
+{% if selected_proposal and active_tab != 'chat' and proposal_preview_data and use_generated_preview %}
+<div id="printTarget" style="display:none;"></div>
+<script>
+window.proposalViewData = {{ proposal_preview_data|tojson }};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/propas.js') }}"></script>
+{% endif %}
 </body>
 </html>

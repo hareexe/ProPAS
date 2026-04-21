@@ -108,6 +108,39 @@
                 {% endif %}
             </div>
 
+            <div class="filter-card">
+                <form method="GET" action="{{ url_for('office.review') }}" class="filter-form">
+                    <div class="filter-group search">
+                        <label for="search">Search Title</label>
+                        <input type="text" id="search" name="search" placeholder="Enter proposal title..." value="{{ dashboard_filters.search }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="username_filter">Organization / Dept</label>
+                        <select id="username_filter" name="username_filter">
+                            <option value="">All Organizations</option>
+                            {% for option in department_options %}
+                            <option value="{{ option.username }}" {% if dashboard_filters.username_filter == option.username %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="mode_filter">Queue Type</label>
+                        <select id="mode_filter" name="mode_filter">
+                            <option value="">All Items</option>
+                            <option value="review" {% if dashboard_filters.mode_filter == 'review' %}selected{% endif %}>Review Queue</option>
+                            <option value="chat" {% if dashboard_filters.mode_filter == 'chat' %}selected{% endif %}>Chat Follow-up</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-filter">Apply Filters</button>
+                        <a href="{{ url_for('office.review') }}" class="btn-reset">Reset</a>
+                    </div>
+                </form>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -133,7 +166,7 @@
                                 <div class="text-xs text-slate-400">{{ prop.proposal_data.get('sponsor', 'N/A') }}</div>
                             </td>
                             <td class="px-6 py-5 text-right">
-                                <a href="{{ url_for('office.review', review_id=prop.id, tab='chat' if item.mode == 'chat' else 'overview') }}" class="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition font-semibold text-sm">
+                                <a href="{{ url_for('office.review', review_id=prop.id, tab='chat' if item.mode == 'chat' else 'overview', search=dashboard_filters.search, username_filter=dashboard_filters.username_filter, mode_filter=dashboard_filters.mode_filter) }}" class="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition font-semibold text-sm">
                                     {% if item.mode == 'chat' %}
                                     View Chat
                                     {% else %}
@@ -163,10 +196,10 @@
                 
                 <div class="border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
                     <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
-                        <a href="{{ url_for('office.review', review_id=selected_proposal.id, tab='overview') }}" class="rounded-full px-4 py-2 text-sm font-semibold {% if active_tab != 'chat' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-800{% endif %}">
+                        <a href="{{ url_for('office.review', review_id=selected_proposal.id, tab='overview', search=dashboard_filters.search, username_filter=dashboard_filters.username_filter, mode_filter=dashboard_filters.mode_filter) }}" class="rounded-full px-4 py-2 text-sm font-semibold {% if active_tab != 'chat' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-800{% endif %}">
                             Overview
                         </a>
-                        <a href="{{ url_for('office.review', review_id=selected_proposal.id, tab='chat') }}" class="rounded-full px-4 py-2 text-sm font-semibold {% if active_tab == 'chat' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-800{% endif %}">
+                        <a href="{{ url_for('office.review', review_id=selected_proposal.id, tab='chat', search=dashboard_filters.search, username_filter=dashboard_filters.username_filter, mode_filter=dashboard_filters.mode_filter) }}" class="rounded-full px-4 py-2 text-sm font-semibold {% if active_tab == 'chat' %}bg-blue-600 text-white shadow-sm{% else %}text-slate-600 hover:text-slate-800{% endif %}">
                             Chat
                         </a>
                     </div>
@@ -179,10 +212,13 @@
                             <div>
                                 <h2 class="font-semibold text-slate-800">Optimized PDF Viewer</h2>
                                 <p class="text-sm text-slate-500">Embedded viewer with fit-to-width defaults for easier reading.</p>
+                                {% if use_generated_preview %}
+                                <p class="text-sm text-amber-700">This file is being reconstructed from the saved proposal data because the stored PDF is incomplete.</p>
+                                {% endif %}
                                 {% if selected_proposal.proposal_data and selected_proposal.proposal_data.get('supporting_document_path') %}
                                 <p class="text-sm text-slate-500">
                                     Supporting document:
-                                    <a href="{{ url_for('static', filename='uploads/' + selected_proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700">
+                                    <a href="{{ url_for('serve_file', filename=selected_proposal.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700">
                                         {{ selected_proposal.proposal_data.get('supporting_document_name', 'Open attachment') }}
                                     </a>
                                 </p>
@@ -191,11 +227,22 @@
                             <span class="text-xs uppercase tracking-wider text-slate-400">PDF Preview</span>
                         </div>
                         <div class="h-[62vh] min-h-[420px] sm:h-[70vh] sm:min-h-[560px] bg-slate-200">
-                            <iframe 
-                                src="{{ url_for('static', filename='uploads/' + selected_proposal.file_path) }}#toolbar=1&navpanes=0&scrollbar=1&view=FitH" 
-                                class="w-full h-full border-0"
-                                title="Proposal PDF Viewer">
+                            {% if use_generated_preview %}
+                            <div id="proposalViewer" class="w-full h-full overflow-auto bg-[#e8e4de] p-4 sm:p-6">
+                                <div style="font-family:sans-serif; padding:32px; color:#64748b;">Loading reconstructed proposal preview...</div>
+                            </div>
+                            {% else %}
+                            <iframe
+                                title="Proposal PDF Preview"
+                                class="w-full h-full bg-white"
+                                src="{{ url_for('serve_file', filename=selected_proposal.file_path) }}#toolbar=1&navpanes=0&view=FitH"
+                            >
+                                <p style="font-family:sans-serif; padding:32px; color:#64748b;">
+                                    PDF preview is unavailable in this browser.
+                                    <a href="{{ url_for('serve_file', filename=selected_proposal.file_path) }}" target="_blank" rel="noopener noreferrer">Open the file in a new tab</a>.
+                                </p>
                             </iframe>
+                            {% endif %}
                         </div>
                     </section>
 
@@ -296,5 +343,13 @@
         </main>
     </div>
 
+    {% if selected_proposal and active_tab != 'chat' and proposal_preview_data and use_generated_preview %}
+    <div id="printTarget" style="display:none;"></div>
+    <script>
+    window.proposalViewData = {{ proposal_preview_data|tojson }};
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/propas.js') }}"></script>
+    {% endif %}
 </body>
 </html>

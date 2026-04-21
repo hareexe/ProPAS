@@ -1,15 +1,19 @@
 import os
+import io
 import secrets
+import mimetypes
 from datetime import timezone
 from zoneinfo import ZoneInfo
-from flask import Flask
+from flask import Flask, abort, redirect, request, send_from_directory, send_file
 from flask_wtf.csrf import CSRFProtect
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from models import db, ApprovalStep, Proposal, ProposalMessage
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
+from storage import storage
+from utils import normalize_proposal_data, build_proposal_pdf_bytes
 
 # Import Blueprints
 from routes.auth import auth_bp
@@ -21,6 +25,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['DISPLAY_TIMEZONE'] = 'Asia/Manila'
+app.config['STORAGE_BACKEND'] = os.environ.get('STORAGE_BACKEND', 'local')
+app.config['S3_BUCKET'] = os.environ.get('S3_BUCKET')
+app.config['S3_REGION'] = os.environ.get('S3_REGION')
+app.config['S3_ENDPOINT_URL'] = os.environ.get('S3_ENDPOINT_URL')
+app.config['S3_KEY_PREFIX'] = os.environ.get('S3_KEY_PREFIX', 'uploads')
+app.config['S3_URL_EXPIRATION'] = int(os.environ.get('S3_URL_EXPIRATION', '3600'))
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'propas.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -40,6 +50,7 @@ else:
 # ---------------------------------------
 
 db.init_app(app)
+storage.init_app(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'auth.signin'
@@ -59,6 +70,83 @@ def datetime_ph(value, fmt='%b %d, %Y %I:%M %p'):
         value = value.replace(tzinfo=timezone.utc)
 
     return value.astimezone(ZoneInfo(app.config['DISPLAY_TIMEZONE'])).strftime(fmt)
+
+
+def _proposal_signed_roles(proposal):
+    signed_roles = {}
+    for approval in proposal.approvals:
+        if not approval.step or approval.status != 'approved' or not approval.signed_name:
+            continue
+        signed_roles[approval.step.name.upper()] = approval.signed_name
+    return signed_roles
+
+
+def _should_use_generated_preview(file_path):
+    if not file_path:
+        return True
+
+    try:
+        pdf_bytes = storage.read_bytes(file_path)
+    except Exception:
+        return True
+
+    return len(pdf_bytes) < 20_000
+
+
+@app.route('/files/<path:filename>')
+def serve_file(filename):
+    if not filename:
+        abort(404)
+
+    download = request.args.get('download') == '1'
+    if storage.is_remote:
+        try:
+            download_name = os.path.basename(filename) if download else None
+            return redirect(storage.generate_download_url(filename, download_name=download_name))
+        except Exception:
+            abort(404)
+
+    local_path = storage.local_full_path(filename)
+    if not local_path or not os.path.exists(local_path):
+        abort(404)
+
+    mimetype, _ = mimetypes.guess_type(local_path)
+    return send_from_directory(
+        os.path.dirname(local_path),
+        os.path.basename(local_path),
+        as_attachment=download,
+        mimetype=mimetype or 'application/octet-stream',
+    )
+
+
+@app.route('/proposal-download/<int:proposal_id>')
+def download_proposal_pdf(proposal_id):
+    proposal = db.session.get(Proposal, proposal_id)
+    if not proposal:
+        abort(404)
+
+    if not current_user.is_authenticated:
+        abort(403)
+    if current_user.account_type == 'Org' and proposal.creator_id != current_user.id:
+        abort(403)
+    if current_user.account_type not in {'Org', 'Office', 'Admin'}:
+        abort(403)
+
+    download_name = f"{(proposal.title or 'proposal').strip() or 'proposal'}.pdf"
+    proposal_data = normalize_proposal_data(proposal.proposal_data)
+    proposal_data = dict(proposal_data)
+    proposal_data['title'] = proposal.title
+    generated_pdf = build_proposal_pdf_bytes(
+        proposal_data,
+        signed_roles=_proposal_signed_roles(proposal),
+        title=proposal.title,
+    )
+    return send_file(
+        io.BytesIO(generated_pdf),
+        as_attachment=True,
+        download_name=download_name,
+        mimetype='application/pdf',
+    )
 
 # Register Blueprints
 app.register_blueprint(auth_bp)

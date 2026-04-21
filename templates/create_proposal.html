@@ -32,7 +32,7 @@
     <button class="active" onclick="goTo(0)">① Overview</button>
     <button onclick="goTo(1)">② Rationale</button>
     <button onclick="goTo(2)">③ Objectives</button>
-    <button onclick="goTo(3)">④ Budget</button>
+    <button id="budgetNavButton" onclick="goTo(3)">④ Budget</button>
     <button onclick="goTo(4)">⑤ Signatories</button>
   </nav>
 
@@ -41,6 +41,7 @@
     {% if edit_data %}
     <input type="hidden" name="edit_id" value="{{ edit_data.id }}" />
     {% endif %}
+    <input type="hidden" name="approach_items" id="id_approach_items" />
     <input type="hidden" name="budget_items" id="id_budget_items" />
 
     <div class="form-body">
@@ -82,6 +83,20 @@
             <input type="text" id="id_participation" name="participation" placeholder="e.g., All 1st Year Engineering Students" 
                    value="{{ edit_data.proposal_data.get('participation', '') if edit_data else '' }}" required />
           </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Does this proposal require a budget review? <span class="req">*</span></label>
+            {% set needs_budget_value = edit_data.proposal_data.get('needs_budget', 'yes') if edit_data else 'yes' %}
+            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:10px;">
+              <label style="display:flex; align-items:center; gap:8px;">
+                <input type="radio" name="needs_budget" value="yes" {% if needs_budget_value != 'no' %}checked{% endif %} onchange="toggleBudgetSection()">
+                <span>Yes, include budget and Finance review</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px;">
+                <input type="radio" name="needs_budget" value="no" {% if needs_budget_value == 'no' %}checked{% endif %} onchange="toggleBudgetSection()">
+                <span>No, skip budget and Finance review</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -96,8 +111,25 @@
           </div>
           <div class="field">
             <label for="id_approach">VIII. Approach / Process <span class="req">*</span></label>
-            <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" oninput="countChars(this,'approach-count')" placeholder="Describe the approach or methodology..." required>{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
-            <div class="field-footer"><span class="char-count" id="approach-count">0 / 2000</span></div>
+            <textarea id="id_approach" name="approach_list" rows="6" maxlength="2000" style="display:none;" required>{{ edit_data.proposal_data.get('approach_list', '') if edit_data else '' }}</textarea>
+            <div class="approach-table-wrap">
+              <table class="approach-table">
+                <thead>
+                  <tr>
+                    <th class="approach-th-time">Time</th>
+                    <th class="approach-th-activity">Activity</th>
+                    <th class="approach-th-remarks">Description / Remarks</th>
+                    <th class="approach-th-del"></th>
+                  </tr>
+                </thead>
+                <tbody id="approachRows"></tbody>
+              </table>
+            </div>
+            <button type="button" class="bud-add-btn" onclick="addApproachRow()">+ Add schedule row</button>
+            <div class="field-footer field-footer--between">
+              <span class="char-count">Add each schedule item as a separate row.</span>
+              <span class="char-count" id="approach-count">0 / 2000</span>
+            </div>
           </div>
         </div>
       </div>
@@ -134,7 +166,7 @@
 
       <div class="form-section" id="section-3">
         <div class="section-title">Budget</div>
-        <div class="section-subtitle">Form section X of OSA-F05A.</div>
+        <div class="section-subtitle">Form section X of OSA-F05A. This section is skipped when the proposal does not require a budget.</div>
         <div class="field" style="margin-bottom:18px;">
           <label>X-b. Itemization of Proposed Budget <span class="req">*</span></label>
           <div class="bud-table-wrap">
@@ -203,7 +235,7 @@
           <div class="field-footer" style="justify-content:space-between; gap:12px;">
             <span class="char-count">Optional: attach a supporting document before submission.</span>
             {% if edit_data and edit_data.proposal_data.get('supporting_document_name') %}
-            <a href="{{ url_for('static', filename='uploads/' + edit_data.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer">
+            <a href="{{ url_for('serve_file', filename=edit_data.proposal_data.get('supporting_document_path')) }}" target="_blank" rel="noopener noreferrer">
               Current file: {{ edit_data.proposal_data.get('supporting_document_name') }}
             </a>
             {% endif %}
@@ -216,7 +248,7 @@
       <div class="form-nav-left">
         <button type="button" class="btn btn-ghost" id="btnHome" data-url="{{ url_for('proposal.org_home') }}">← Home</button>
         <button type="button" class="btn btn-ghost" id="btnBack" onclick="navigate(-1)" style="display:none">← Back</button>
-        <span class="step-indicator">Step <strong id="currentStep">1</strong> of 5</span>
+        <span class="step-indicator">Step <strong id="currentStep">1</strong> of <strong id="totalSteps">5</strong></span>
       </div>
       <div class="form-nav-right">
         <button type="button" class="btn btn-preview no-print" id="btnPreview" style="display:none" onclick="openPreview()">Preview PDF</button>
@@ -243,9 +275,9 @@
 </div>
 
 <div id="printTarget" style="display:none;"></div>
-<script>
-  window.initialBudgetItems = {{ edit_data.proposal_data.get('budget_items', [])|tojson if edit_data else '[]' }};
-</script>
+<script id="initialApproachItems" type="application/json">{{ edit_data.proposal_data.get('approach_items', [])|tojson if edit_data else '[]' }}</script>
+<script id="initialApproachText" type="application/json">{{ edit_data.proposal_data.get('approach_list', '')|tojson if edit_data else '""' }}</script>
+<script id="initialBudgetItems" type="application/json">{{ edit_data.proposal_data.get('budget_items', [])|tojson if edit_data else '[]' }}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/propas.js') }}"></script>
 </body>
