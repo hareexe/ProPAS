@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from models import db, User, Proposal, ApprovalStep, DocumentApproval, ProposalMessage
-from utils import add_signature_page_bytes
+from utils import add_signature_page_bytes, build_proposal_pdf_bytes
 from utils import build_month_matrix, get_proposal_venue, normalize_proposal_data, parse_event_date, proposal_needs_budget
 from datetime import datetime, date
 import calendar
@@ -220,6 +220,7 @@ def review(review_id=None):
             flag_modified(current_user, 'profile_data')
             db.session.add(current_user)
          
+            proposal_data = normalize_proposal_data(prop.proposal_data)
             signed_roles = _signed_roles_for_pdf(
                 prop,
                 current_step_name=my_step.name,
@@ -228,16 +229,29 @@ def review(review_id=None):
             signed_pdf_bytes = None
             try:
                 existing_pdf_bytes = storage.read_bytes(prop.file_path) if prop.file_path else None
+            except Exception:
+                existing_pdf_bytes = None
+
+            if existing_pdf_bytes:
                 signed_pdf_bytes = add_signature_page_bytes(
                     existing_pdf_bytes,
                     signed_roles,
-                    proposal_data=normalize_proposal_data(prop.proposal_data),
+                    proposal_data=proposal_data,
                 )
-            except Exception:
-                signed_pdf_bytes = None
+
+            if not signed_pdf_bytes:
+                signed_pdf_bytes = build_proposal_pdf_bytes(
+                    proposal_data,
+                    signed_roles=signed_roles,
+                    title=prop.title,
+                )
 
             if signed_pdf_bytes:
-                storage.write_bytes(prop.file_path, signed_pdf_bytes, content_type='application/pdf')
+                if prop.file_path:
+                    try:
+                        storage.write_bytes(prop.file_path, signed_pdf_bytes, content_type='application/pdf')
+                    except Exception:
+                        pass
                 current_approval.signed_name = printed_name
                 current_approval.status = 'approved'
                 current_approval.remarks = remarks
@@ -254,7 +268,7 @@ def review(review_id=None):
 
                 flash(f"Proposal '{prop.title}' signed and forwarded.", "success")
             else:
-                flash("Failed to generate PDF signature. Please check file permissions.", "danger")
+                flash("Failed to generate the signed PDF for this proposal.", "danger")
 
         elif action == 'reject':
 
